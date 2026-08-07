@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>รายละเอียดสินทรัพย์ — X32</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1 id="title">กำลังโหลด…</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="subtitle"></p>
+    </div>
+    <nav>
+      <a href="/">← Dashboard</a>
+      <a href="/screener.html">คัดกรองทั้งหมด</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <!-- ตัวเลขหลัก -->
+  <section class="grid grid-4" id="headline" style="margin-bottom:22px"></section>
+
+  <!-- บทวิเคราะห์จาก AI -->
+  <section class="card" id="ai-card">
+    <div class="card-head">
+      <h2>เหตุผล — ทำไมถึงน่าสนใจ (หรือไม่)</h2>
+      <span class="badge badge-accent">วิเคราะห์โดย AI</span>
+    </div>
+    <div id="ai-body"></div>
+  </section>
+
+  <!-- กราฟราคา -->
+  <section class="card">
+    <div class="card-head">
+      <h2>ราคาย้อนหลัง 1 ปี</h2>
+      <span class="badge" id="chart-range"></span>
+    </div>
+    <div class="chart-box" id="chart"></div>
+  </section>
+
+  <div class="grid grid-2" id="detail-grid">
+
+    <!-- คะแนนแยกตามระยะ -->
+    <section class="card" style="margin:0">
+      <h2>เหมาะกับการลงทุนระยะไหน</h2>
+      <p class="small muted">คะแนนเต็ม 100 · ยิ่งสูงยิ่งเข้าเกณฑ์ของระยะนั้น</p>
+      <div id="horizons"></div>
+    </section>
+
+    <!-- คะแนนปัจจัย -->
+    <section class="card" style="margin:0">
+      <h2>คะแนนรายปัจจัย</h2>
+      <p class="small muted">เทียบกับสินทรัพย์กลุ่มเดียวกัน · 50 = ค่ากลางของกลุ่ม</p>
+      <div id="factors"></div>
+    </section>
+
+  </div>
+
+  <!-- ข้อมูลพื้นฐาน -->
+  <section class="card">
+    <h2>ข้อมูลพื้นฐาน</h2>
+    <div class="grid grid-4" id="fundamentals"></div>
+  </section>
+
+  <!-- สัญญาณทางเทคนิค -->
+  <section class="card">
+    <h2>สัญญาณทางเทคนิค</h2>
+    <div class="grid grid-4" id="technical"></div>
+    <div id="levels" style="margin-top:16px"></div>
+  </section>
+
+  <div class="disclaimer">
+    <strong>คำเตือน</strong>
+    <p style="margin:6px 0 0" id="disclaimer"></p>
+  </div>
+
+</div>
+
+<script type="module" src="/assets/asset.js"></script>
+</body>
+</html>

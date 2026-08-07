@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>คัดกรองทั้งหมด — X32</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1>คัดกรองสินทรัพย์</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="updated"></p>
+    </div>
+    <nav>
+      <a href="/">← Dashboard</a>
+      <a href="/screener.html" aria-current="page">คัดกรองทั้งหมด</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>ตัวกรอง</h2>
+      <span class="badge badge-accent" id="result-count"></span>
+    </div>
+
+    <div class="grid grid-4">
+      <div>
+        <label for="f-market">ตลาด</label>
+        <select id="f-market" class="mono"></select>
+      </div>
+      <div>
+        <label for="f-class">ประเภท</label>
+        <select id="f-class" class="mono"></select>
+      </div>
+      <div>
+        <label for="f-trend">แนวโน้ม</label>
+        <select id="f-trend" class="mono"></select>
+      </div>
+      <div>
+        <label for="f-return">ผลตอบแทน 1 ปี อย่างน้อย</label>
+        <select id="f-return" class="mono"></select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px">
+      <label for="f-search">ค้นหาชื่อหรือสัญลักษณ์</label>
+      <input type="text" id="f-search" placeholder="เช่น KBANK หรือ Apple">
+    </div>
+
+    <p class="small muted" style="margin-bottom:0;margin-top:14px">
+      คลิกหัวคอลัมน์เพื่อเรียงลำดับ · คลิกที่แถวเพื่อดูรายละเอียด
+    </p>
+  </section>
+
+  <section class="card">
+    <div class="table-scroll">
+      <table>
+        <thead><tr id="head-row"></tr></thead>
+        <tbody id="rows">
+          <tr><td class="skeleton" colspan="11">กำลังโหลด…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    <strong>คำเตือน</strong>
+    <p style="margin:6px 0 0" id="disclaimer"></p>
+  </div>
+
+</div>
+
+<script type="module" src="/assets/screener.js"></script>
+</body>
+</html>

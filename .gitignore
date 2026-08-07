@@ -1,0 +1,27 @@
+# Secrets — ห้าม commit เด็ดขาด
+.env
+.env.local
+*.key
+*.pem
+secrets.*
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Node
+node_modules/
+
+# Cache ของ pipeline (ไม่ต้องเก็บใน repo)
+.cache/
+*.parquet
+
+# Editor / OS
+.claude/
+.DS_Store
+Thumbs.db
+
+# Local Netlify folder
+.netlify

@@ -1,0 +1,32 @@
+[build]
+  # ไม่มี build step — เสิร์ฟ static ตรงๆ ตามแพทเทิร์นบ้าน (X.18, X.22)
+  publish = "public"
+  functions = "functions"
+
+[functions]
+  node_bundler = "esbuild"
+  # ให้ Functions อ่านไฟล์ข้อมูลได้ ทั้งที่ data-private/ ไม่ได้ถูก publish
+  # นี่คือกลไกที่ทำให้ข้อมูลเป็นส่วนตัวจริง — เปิด URL ตรงจะได้ 404
+  included_files = ["data-private/**"]
+
+[[redirects]]
+  from = "/api/login"
+  to = "/.netlify/functions/login"
+  status = 200
+
+[[redirects]]
+  from = "/api/data"
+  to = "/.netlify/functions/data"
+  status = 200
+
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

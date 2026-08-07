@@ -1,0 +1,248 @@
+/* ============================================================
+   X32 — Brutalism Design System
+   หลักการ: กรอบหนา เงาแข็งไม่เบลอ ไม่มีมุมโค้ง คอนทราสต์สูง
+   ไม่มี framework ไม่มี build step — ตามแพทเทิร์นของโปรเจกต์อื่นในบ้าน
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+
+:root {
+  --paper: #f5f2e8;
+  --ink: #000000;
+  --panel: #ffffff;
+  --muted: #6b6b6b;
+  --line: #000000;
+
+  --accent: #ff4d00;   /* ส้มสด — ใช้เน้นสิ่งสำคัญที่สุดเท่านั้น */
+  --up: #00a651;       /* เขียว — ราคาขึ้น */
+  --down: #e8112d;     /* แดง — ราคาลง */
+  --warn: #ffd600;     /* เหลือง — คำเตือน/ข้อมูลไม่ครบ */
+  --info: #0057ff;
+
+  --border: 3px;
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --max: 1240px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12120f;
+    --ink: #f5f2e8;
+    --panel: #1c1c18;
+    --muted: #9a9a92;
+    --line: #f5f2e8;
+    --up: #22dd77;
+    --down: #ff5566;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  /* เส้นกริดจางๆ เป็นพื้นหลัง — เอกลักษณ์ของ brutalism คือโชว์โครงสร้าง */
+  background-image:
+    linear-gradient(to right, rgba(128,128,128,.10) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(128,128,128,.10) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+h1, h2, h3 { font-family: 'Archivo Black', sans-serif; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: -.02em; }
+h2 { font-size: clamp(1.1rem, 2.4vw, 1.5rem); text-transform: uppercase; }
+h3 { font-size: 1rem; text-transform: uppercase; }
+
+a { color: inherit; }
+
+.mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: .82rem; }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px 64px; }
+
+/* ── หัวเว็บ ───────────────────────────────────────────────── */
+.masthead {
+  border-bottom: var(--border) solid var(--line);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 18px 0;
+  margin-bottom: 22px;
+}
+.masthead .wrap { padding-bottom: 0; display: flex; flex-wrap: wrap;
+  gap: 12px; align-items: baseline; justify-content: space-between; }
+.masthead h1 { color: var(--paper); }
+.masthead nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.masthead nav a {
+  font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: .8rem;
+  text-transform: uppercase; text-decoration: none; padding: 6px 12px;
+  border: 2px solid var(--paper); background: transparent; color: var(--paper);
+}
+.masthead nav a:hover, .masthead nav a[aria-current="page"] {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+
+/* ── การ์ด ─────────────────────────────────────────────────── */
+.card {
+  background: var(--panel);
+  border: var(--border) solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 22px;
+}
+.card > h2, .card > h3 { margin-bottom: 12px; }
+
+.card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+  border-bottom: 2px solid var(--line); padding-bottom: 8px;
+}
+
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+/* ต่ำกว่า 720px การ์ดสองคอลัมน์จะแคบเกินไปและเงาแข็งจะดันจนหน้าเลื่อนแนวนอน */
+@media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+/* ── ตัวเลขสำคัญ ───────────────────────────────────────────── */
+.stat { border: 2px solid var(--line); padding: 10px 12px; background: var(--panel); }
+.stat .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+.stat .value { font-family: 'Archivo Black', sans-serif; font-size: 1.5rem;
+  line-height: 1.2; margin-top: 2px; }
+
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+/* ── ป้ายกำกับ ─────────────────────────────────────────────── */
+.badge {
+  display: inline-block; font-family: 'IBM Plex Mono', monospace;
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  padding: 2px 7px; border: 2px solid var(--line); background: var(--panel);
+  white-space: nowrap;
+}
+.badge-accent { background: var(--accent); color: #fff; border-color: var(--ink); }
+.badge-up { background: var(--up); color: #fff; }
+.badge-down { background: var(--down); color: #fff; }
+.badge-warn { background: var(--warn); color: #000; }
+.badge-th { background: var(--info); color: #fff; }
+
+/* ── ปุ่ม ───────────────────────────────────────────────────── */
+.btn {
+  font-family: 'Archivo Black', sans-serif; font-size: .9rem;
+  text-transform: uppercase; letter-spacing: .02em;
+  padding: 11px 20px; border: var(--border) solid var(--line);
+  background: var(--accent); color: #fff; cursor: pointer;
+  box-shadow: var(--shadow-sm); transition: transform .06s, box-shadow .06s;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
+.btn:active { transform: translate(3px, 3px); box-shadow: none; }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-ghost { background: var(--panel); color: var(--ink); }
+
+/* ปุ่มสลับหมวด */
+.tabs { display: flex; gap: 0; flex-wrap: wrap; margin-bottom: 18px; }
+.tab {
+  font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: .82rem;
+  padding: 10px 16px; border: var(--border) solid var(--line);
+  margin-right: -3px; background: var(--panel); color: var(--ink); cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.tab .n { font-weight: 400; opacity: .6; margin-left: 5px; }
+
+/* แถวตัวกรอง — ป้ายกำกับซ้าย ปุ่มขวา เรียงลงเมื่อจอแคบ */
+.filter-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.filter-row .tabs { margin-bottom: 0; }
+.filter-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  padding-top: 11px; white-space: nowrap; min-width: 108px;
+}
+
+/* ชิปอุตสาหกรรม — เบากว่า .tab เพราะเป็นตัวกรองชั้นรอง */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: 'IBM Plex Sans Thai', sans-serif; font-size: .76rem; font-weight: 600;
+  padding: 6px 11px; border: 2px solid var(--line); background: var(--panel);
+  color: var(--ink); cursor: pointer;
+}
+.chip[aria-selected="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip .n { font-family: 'IBM Plex Mono', monospace; opacity: .65; margin-left: 5px; }
+
+@media (max-width: 700px) {
+  .filter-row { flex-direction: column; gap: 6px; }
+  .filter-label { padding-top: 0; min-width: 0; }
+}
+
+/* ── ตาราง ─────────────────────────────────────────────────── */
+.table-scroll { overflow-x: auto; border: 2px solid var(--line); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; }
+th, td { padding: 9px 10px; text-align: right; border-bottom: 2px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th {
+  background: var(--ink); color: var(--paper); font-family: 'IBM Plex Mono', monospace;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .03em;
+  position: sticky; top: 0;
+}
+tbody tr:hover { background: var(--warn); color: #000; }
+tbody tr { cursor: pointer; }
+td.num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.rank { font-family: 'Archivo Black', sans-serif; }
+
+/* แถบคะแนน */
+.bar { display: block; height: 12px; border: 2px solid var(--line);
+  background: var(--panel); width: 74px; margin-left: auto; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+
+/* ── แถบดัชนี ──────────────────────────────────────────────── */
+.ticker { display: flex; gap: 0; overflow-x: auto; border: var(--border) solid var(--line);
+  background: var(--panel); margin-bottom: 22px; }
+.ticker > div { padding: 10px 16px; border-right: 2px solid var(--line);
+  white-space: nowrap; flex: 1 0 auto; }
+.ticker > div:last-child { border-right: none; }
+.ticker .name { font-size: .7rem; text-transform: uppercase; color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; }
+.ticker .px { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 1rem; }
+
+/* ── แจ้งเตือน ─────────────────────────────────────────────── */
+.notice { border: var(--border) solid var(--line); background: var(--warn); color: #000;
+  padding: 12px 16px; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
+.disclaimer { border: var(--border) solid var(--line); background: var(--panel);
+  padding: 14px 16px; font-size: .82rem; margin-top: 32px; }
+.disclaimer strong { text-transform: uppercase; font-family: 'Archivo Black', sans-serif; }
+
+/* ── หน้าเข้าสู่ระบบ ────────────────────────────────────────── */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login-box { width: min(420px, 100%); background: var(--panel);
+  border: var(--border) solid var(--line); box-shadow: 10px 10px 0 var(--ink); padding: 28px; }
+.login-box h1 { margin-bottom: 6px; }
+input[type="password"], input[type="text"], select {
+  width: 100%; padding: 12px; font-size: 1rem; font-family: 'IBM Plex Mono', monospace;
+  border: var(--border) solid var(--line); background: var(--paper); color: var(--ink);
+  border-radius: 0; appearance: none;
+}
+select { cursor: pointer; padding-right: 34px;
+  /* ลูกศรวาดเองด้วย SVG inline — ไม่ต้องโหลดไฟล์ภายนอก */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10'><path d='M1 1l6 7 6-7' stroke='%23888' stroke-width='2.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; }
+input:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: .78rem;
+  text-transform: uppercase; margin: 16px 0 6px; font-weight: 700; }
+.error { border: 2px solid var(--down); background: var(--down); color: #fff;
+  padding: 9px 12px; margin-top: 14px; font-size: .85rem; }
+
+.skeleton { color: var(--muted); padding: 28px; text-align: center;
+  font-family: 'IBM Plex Mono', monospace; }
+
+/* กราฟ SVG ปรับความสูงตามสัดส่วนเอง และต้องไม่ทำให้หน้าเลื่อนแนวนอน */
+.chart-box { width: 100%; max-width: 100%; overflow-x: hidden; }
+.chart-box svg { color: var(--ink); }

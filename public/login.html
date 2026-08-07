@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>เข้าสู่ระบบ — X32 Investment Copilot</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+<main class="login-wrap">
+  <form class="login-box" id="form">
+    <h1>X32</h1>
+    <p class="mono small muted" style="margin-top:0">INVESTMENT COPILOT · ระบบส่วนตัว</p>
+
+    <label for="pw">รหัสผ่าน</label>
+    <input type="password" id="pw" autocomplete="current-password" required autofocus>
+
+    <button class="btn" type="submit" id="submit" style="width:100%;margin-top:18px">
+      เข้าสู่ระบบ
+    </button>
+
+    <div id="err" class="error" hidden></div>
+
+    <p class="small muted" style="margin-top:20px;border-top:2px solid var(--line);padding-top:12px">
+      ระบบนี้จัดทำเพื่อการศึกษาส่วนบุคคล ไม่ใช่คำแนะนำการลงทุน
+    </p>
+  </form>
+</main>
+
+<script>
+const form = document.getElementById('form');
+const err = document.getElementById('err');
+const submit = document.getElementById('submit');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.hidden = true;
+  submit.disabled = true;
+  submit.textContent = 'กำลังตรวจสอบ…';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: document.getElementById('pw').value }),
+    });
+    if (res.ok) {
+      // ไปหน้าที่ผู้ใช้ตั้งใจเข้าตั้งแต่แรก ถ้ามี
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = (next && next.startsWith('/')) ? next : '/';
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.error || 'เข้าสู่ระบบไม่สำเร็จ';
+    err.hidden = false;
+  } catch {
+    err.textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
+    err.hidden = false;
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'เข้าสู่ระบบ';
+  }
+});
+</script>
+</body>
+</html>

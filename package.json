@@ -1,0 +1,14 @@
+{
+  "name": "x32-investment-copilot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ระบบผู้ช่วยวิเคราะห์การลงทุนส่วนตัว — static site + Netlify Functions",
+  "scripts": {
+    "dev": "netlify dev",
+    "pipeline": "python pipeline/main.py"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}

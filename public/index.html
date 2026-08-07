@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard — X32 Investment Copilot</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1>X32 INVESTMENT COPILOT</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="updated">กำลังโหลด…</p>
+    </div>
+    <nav>
+      <a href="/" aria-current="page">Dashboard</a>
+      <a href="/screener.html">คัดกรองทั้งหมด</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <!-- แถบดัชนีอ้างอิงตลาด -->
+  <div class="ticker" id="ticker"><div class="skeleton">กำลังโหลดดัชนี…</div></div>
+
+  <!-- ตัวเลขสรุปภาพรวม -->
+  <section class="grid grid-4" id="summary" style="margin-bottom:22px"></section>
+
+  <!-- ทองคำ -->
+  <section class="card" id="gold-card" hidden>
+    <div class="card-head">
+      <h2>ทองคำ</h2>
+      <span class="badge" id="gold-updated"></span>
+    </div>
+    <div class="grid grid-4" id="gold-body"></div>
+    <p class="small muted" style="margin:12px 0 0" id="gold-source"></p>
+  </section>
+
+  <!-- อันดับตามระยะการลงทุน -->
+  <section class="card">
+    <div class="card-head">
+      <h2>สินทรัพย์น่าสนใจ แยกตามระยะการลงทุน</h2>
+      <span class="badge badge-accent" id="horizon-count"></span>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">กลุ่มสินทรัพย์</span>
+      <div class="tabs" id="group-tabs" role="tablist"></div>
+    </div>
+
+    <div class="filter-row" id="sector-row">
+      <span class="filter-label">อุตสาหกรรม</span>
+      <div class="chips" id="sector-chips" role="tablist"></div>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">ระยะการลงทุน</span>
+      <div class="tabs" id="tabs" role="tablist"></div>
+    </div>
+
+    <p class="small muted" id="horizon-help" style="margin-top:0"></p>
+    <p class="small" id="scope-note" style="margin:0 0 14px" hidden></p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>สินทรัพย์</th><th>ตลาด</th><th>ราคา</th>
+            <th>1 เดือน</th><th>1 ปี</th><th>ปันผล</th><th>P/E</th>
+            <th>แนวโน้ม</th><th>คะแนน</th>
+          </tr>
+        </thead>
+        <tbody id="horizon-rows">
+          <tr><td colspan="10" class="skeleton">กำลังโหลด…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-bottom:0">
+      คลิกที่แถวเพื่อดูรายละเอียดและเหตุผลของสินทรัพย์นั้น
+    </p>
+  </section>
+
+  <!-- เคลื่อนไหวเด่นในรอบสัปดาห์ -->
+  <div class="grid grid-2" id="movers-grid">
+    <section class="card" style="margin:0">
+      <h2 style="color:var(--up)">▲ มาแรงสัปดาห์นี้</h2>
+      <div id="gainers"></div>
+    </section>
+    <section class="card" style="margin:0">
+      <h2 style="color:var(--down)">▼ ร่วงแรงสัปดาห์นี้</h2>
+      <div id="losers"></div>
+    </section>
+  </div>
+
+  <div class="disclaimer">
+    <strong>คำเตือน</strong>
+    <p style="margin:6px 0 0" id="disclaimer"></p>
+  </div>
+
+</div>
+
+<script type="module" src="/assets/app.js"></script>
+</body>
+</html>
