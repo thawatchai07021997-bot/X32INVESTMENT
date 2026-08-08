@@ -40,7 +40,11 @@ export default async function handler(request) {
 
   let used = 0;
   try {
-    used = Number(await store.get(key)) || 0;
+    // ต้องอ่านแบบ strong — ค่าเริ่มต้นของ Blobs คือ eventual ซึ่งอ่านค่าที่เพิ่ง
+    // เขียนไปไม่ทัน · ทดสอบจริง: ยิงถาม AI 4 ครั้งแบบเรียงต่อกัน (ไม่ใช่พร้อมกัน)
+    // ตัวนับขึ้นแค่ 3 เพราะครั้งที่ 4 อ่านเจอค่าก่อนครั้งที่ 3 · แปลว่าเพดาน 30
+    // ครั้ง/วันที่ใช้คุมค่าใช้จ่ายรั่วได้จริงแม้ใช้งานคนเดียวทีละคำถาม
+    used = Number(await store.get(key, { consistency: 'strong' })) || 0;
   } catch (err) {
     // อ่าน blob ไม่ได้ = ระบบนับพัง ไม่ใช่ผู้ใช้ใช้เกิน — ปล่อยให้ถามต่อได้
     // แต่ต้อง log ไว้ ไม่งั้นโควตาจะพังเงียบๆ แล้วไม่มีใครรู้
@@ -65,8 +69,10 @@ export default async function handler(request) {
   }
 
   const next = used + 1;
-  // Blobs ไม่มี increment แบบ atomic — ถ้ายิงพร้อมกันหลายแท็บ ยอดอาจนับตกไปหนึ่ง
+  // Blobs ไม่มี increment แบบ atomic และเวอร์ชัน 8.2.0 ไม่มี conditional write
+  // (SetOptions มีแต่ metadata) — ถ้ายิง "พร้อมกัน" จริงๆ หลายแท็บ ยอดยังนับตกได้
   // ยอมรับได้เพราะเว็บนี้มีผู้ใช้คนเดียว และการนับตกทำให้ "ถามได้มากกว่า" ไม่ใช่ "ถูกบล็อกผิด"
+  // ส่วนกรณีถามเรียงต่อกันทีละคำถามซึ่งเกิดจริงทุกวัน แก้แล้วด้วย consistency: 'strong' ข้างบน
   await store.set(key, String(next));
 
   return json({ allowed: true, used: next, limit: DAILY_LIMIT, resets_at: nextResetISO() });
