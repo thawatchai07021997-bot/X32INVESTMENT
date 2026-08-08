@@ -10,6 +10,8 @@ repo: github.com/thawatchai07021997-bot/X32INVESTMENT (private) → Netlify auto
 ต้นทุน: pipeline ~30 บาท/เดือน · ถาม AI 1.40 บาท/คำถาม (จำกัด 30/วัน = เพดาน ~42 บาท/วัน)
 
 ## ทำต่อจากตรงนี้
+0. **กดรัน workflow หนึ่งรอบ** — `slim()` เพิ่ม beta/volatility แล้ว แต่ `dashboard.json`
+   ชุดปัจจุบันยังไม่มี หน้าวางแผนจึงประมาณค่าให้ไปก่อนและขึ้นคำเตือนสีเหลือง
 1. **ปรับ `summarizeAsset()`** ใน `netlify/edge-functions/lib/tools.js` — เลือกว่า AI ควรเห็น
    field ไหนตอนคัดกรอง ตอนนี้เป็นชุดขั้นต่ำ ผู้ใช้ยังไม่ตัดสินใจ · คอมเมนต์ในไฟล์ระบุตัวเลือกครบ
 2. **DoD ที่เหลือ:** backtest เกณฑ์คัดกรอง → ทบทวนคำอธิบายให้คนไม่มีพื้นฐานการเงินอ่านรู้เรื่อง
@@ -29,6 +31,7 @@ repo: github.com/thawatchai07021997-bot/X32INVESTMENT (private) → Netlify auto
 | `functions/_auth.js` | session cookie (HMAC) — ต้องตรงกับ `edge-functions/lib/auth.js` เสมอ |
 | `netlify/edge-functions/chat.js` | ถาม-ตอบ AI — วน tool loop + stream SSE (ต้องอยู่บน Edge) |
 | `netlify/edge-functions/lib/tools.js` | เครื่องมือ 3 ตัวที่ AI เรียกดูข้อมูล + `summarizeAsset()` |
+| `public/assets/finance.js` | คณิตศาสตร์วางแผนการลงทุน — ไม่ยุ่ง DOM ทดสอบแยกได้ |
 
 ## กฎที่ต้องรู้ (อย่าให้เกิดซ้ำ)
 - **กราฟ SVG เขียนเองใน `chart.js`** — CDN ถูกบล็อกในเครือข่ายนี้ และการไม่พึ่ง CDN ทำให้
