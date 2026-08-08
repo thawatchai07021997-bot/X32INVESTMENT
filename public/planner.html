@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>วางแผนการลงทุน — X32</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1>วางแผนการลงทุน</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="updated"></p>
+    </div>
+    <nav>
+      <a href="/">← Dashboard</a>
+      <a href="/screener.html">คัดกรองทั้งหมด</a>
+      <a href="/planner.html" aria-current="page">วางแผน</a>
+      <a href="/chat.html">ถาม AI</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab" data-panel="sim" aria-current="page" type="button">จำลองผลตอบแทน</button>
+    <button class="tab" data-panel="income" type="button">พอร์ตปันผล</button>
+  </div>
+
+  <!-- ══ แท็บ 1: จำลองผลตอบแทน ══ -->
+  <section id="panel-sim">
+
+    <div class="card">
+      <div class="card-head"><h2>1 · เลือกสินทรัพย์</h2></div>
+
+      <div class="grid grid-2">
+        <div>
+          <label for="pick-mode">วิธีเลือก</label>
+          <select id="pick-mode" class="mono">
+            <option value="guide">โหมดไกด์ — ให้ระบบจัดให้จากอันดับต้นของแต่ละระยะ</option>
+            <option value="manual">เลือกเอง</option>
+          </select>
+        </div>
+        <div>
+          <label for="risk">ระดับความเสี่ยงที่รับได้</label>
+          <select id="risk" class="mono">
+            <option value="low">ต่ำ — ยอมโตช้าลง เพื่อให้เงินต้นแกว่งน้อย</option>
+            <option value="mid" selected>กลาง — สมดุลระหว่างการเติบโตกับความผันผวน</option>
+            <option value="high">สูง — ยอมให้เงินต้นติดลบหนัก เพื่อโอกาสโตมาก</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="manual-box" hidden>
+        <label>เลือกสินทรัพย์ที่สนใจ (กดเพื่อเลือก/ยกเลิก)</label>
+        <input type="text" id="search" class="mono" placeholder="พิมพ์ชื่อหรือสัญลักษณ์เพื่อค้นหา">
+        <div id="asset-picker" class="picker"></div>
+      </div>
+
+      <div id="selected-box">
+        <label>สินทรัพย์ในพอร์ตจำลอง</label>
+        <div id="selected" class="chips"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>2 · เงินลงทุนและระยะเวลา</h2></div>
+      <div class="grid grid-4">
+        <div>
+          <label for="lump">เงินก้อนวันนี้ (บาท)</label>
+          <input type="number" id="lump" class="mono" value="100000" min="0" step="10000">
+        </div>
+        <div>
+          <label for="monthly">DCA ทุกเดือน (บาท)</label>
+          <input type="number" id="monthly" class="mono" value="5000" min="0" step="1000">
+        </div>
+        <div>
+          <label for="years">ถือครองกี่ปี</label>
+          <input type="number" id="years" class="mono" value="10" min="1" max="40" step="1">
+        </div>
+        <div>
+          <label for="runs">ความละเอียดการจำลอง</label>
+          <select id="runs" class="mono">
+            <option value="2000">เร็ว (2,000 เส้นทาง)</option>
+            <option value="5000" selected>มาตรฐาน (5,000)</option>
+            <option value="20000">ละเอียด (20,000)</option>
+          </select>
+        </div>
+      </div>
+      <details class="assumptions">
+        <summary>สมมติฐานผลตอบแทนระยะยาว (กดเพื่อปรับ)</summary>
+        <p class="muted small">
+          ตัวเลขเหล่านี้คือค่าเฉลี่ยระยะยาวของตลาด ไม่ใช่ผลงานปีที่ผ่านมาของหุ้นที่เลือก
+          เพราะหุ้นที่วิ่งแรงปีนี้มักไม่วิ่งแรงต่อไปเรื่อยๆ ระบบใช้ค่าเหล่านี้ปรับด้วยค่า beta
+          ของแต่ละตัวอีกชั้นหนึ่ง
+        </p>
+        <div class="grid grid-4">
+          <div><label for="a-th">หุ้นไทย (%/ปี)</label>
+            <input type="number" id="a-th" class="mono" value="8" step="0.5"></div>
+          <div><label for="a-us">หุ้นสหรัฐฯ (%/ปี)</label>
+            <input type="number" id="a-us" class="mono" value="10" step="0.5"></div>
+          <div><label for="a-gold">ทองคำ (%/ปี)</label>
+            <input type="number" id="a-gold" class="mono" value="6" step="0.5"></div>
+          <div><label for="a-inf">เงินเฟ้อ (%/ปี)</label>
+            <input type="number" id="a-inf" class="mono" value="2" step="0.5"></div>
+        </div>
+      </details>
+      <button id="run-sim" class="btn" type="button" style="margin-top:18px">คำนวณ</button>
+    </div>
+
+    <div id="sim-result" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>ผลการจำลอง</h2>
+          <span class="badge badge-accent" id="sim-badge"></span>
+        </div>
+        <div id="sim-summary"></div>
+        <div class="chart-box" id="sim-chart"></div>
+        <div id="sim-table"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══ แท็บ 2: พอร์ตปันผล ══ -->
+  <section id="panel-income" hidden>
+
+    <div class="card">
+      <div class="card-head"><h2>อยากได้ปันผลเดือนละเท่าไร</h2></div>
+      <div class="grid grid-4">
+        <div>
+          <label for="target">เป้าหมายสุทธิ (บาท/เดือน)</label>
+          <input type="number" id="target" class="mono" value="30000" min="1000" step="5000">
+        </div>
+        <div>
+          <label for="count">จำนวนหุ้นในพอร์ต</label>
+          <input type="number" id="count" class="mono" value="6" min="3" max="15" step="1">
+        </div>
+        <div>
+          <label for="min-yield">อัตราปันผลขั้นต่ำ (%)</label>
+          <input type="number" id="min-yield" class="mono" value="3" min="1" max="10" step="0.5">
+        </div>
+        <div>
+          <label for="tax">ภาษีหัก ณ ที่จ่าย</label>
+          <select id="tax" class="mono">
+            <option value="1" selected>คิดภาษี (ไทย 10% · สหรัฐฯ 15%)</option>
+            <option value="0">ไม่คิดภาษี</option>
+          </select>
+        </div>
+      </div>
+      <button id="run-income" class="btn" type="button" style="margin-top:18px">จัดพอร์ตให้</button>
+    </div>
+
+    <div id="income-result" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>พอร์ตที่ได้</h2>
+          <span class="badge badge-accent" id="income-badge"></span>
+        </div>
+        <div id="income-summary"></div>
+        <div class="table-scroll"><table id="income-table"></table></div>
+        <div id="income-notes"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <p class="muted small" id="disclaimer"></p>
+
+</div>
+
+<script type="module" src="/assets/planner.js"></script>
+</body>
+</html>

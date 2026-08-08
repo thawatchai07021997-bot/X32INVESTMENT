@@ -283,3 +283,35 @@ label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: .78r
   .ask-bar button { padding: 14px; }
   .bubble-user { max-width: 100%; }
 }
+
+/* ── หน้าวางแผนการลงทุน ─────────────────────────────────── */
+
+.picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px; max-height: 300px; overflow-y: auto; margin-top: 10px;
+  border: 2px solid var(--line); padding: 10px; }
+.pick { text-align: left; padding: 8px 10px; cursor: pointer; font-size: .85rem;
+  border: 2px solid var(--line); background: var(--paper); color: var(--ink);
+  font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.chip-x { margin-left: 8px; border: none; background: none; cursor: pointer;
+  color: inherit; font-size: 1.1rem; line-height: 1; padding: 0; }
+
+.lead { font-size: 1.05rem; line-height: 1.7; margin: 0 0 18px; }
+.lead strong { font-size: 1.25rem; color: var(--accent); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px;
+  background: var(--line); border: var(--border) solid var(--line); }
+.stat-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  padding: 11px 14px; background: var(--panel); }
+.stat-label { flex: 1 1 auto; font-size: .85rem; }
+.stat-value { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 1rem; }
+.stat-row .muted { flex-basis: 100%; }
+
+.assumptions { margin-top: 20px; border: 2px solid var(--line); padding: 12px 14px; }
+.assumptions summary { cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+  font-size: .8rem; text-transform: uppercase; font-weight: 700; }
+
+input[type="number"] { width: 100%; padding: 12px; font-size: 1rem;
+  font-family: 'IBM Plex Mono', monospace; border: var(--border) solid var(--line);
+  background: var(--paper); color: var(--ink); border-radius: 0; }

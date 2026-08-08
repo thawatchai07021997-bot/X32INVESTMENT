@@ -175,6 +175,12 @@ def slim(rec: dict) -> dict:
         "dividend_yield", "trailing_pe", "market_cap",
         "score_value", "score_quality", "score_momentum", "score_dividend",
         "score_technical", "horizon_scores",
+        # ── ใช้โดยหน้าวางแผนการลงทุน (planner.html) ──
+        # beta + volatility ป้อนโมเดล single-index ที่ใช้คำนวณความเสี่ยงของพอร์ต
+        # max_drawdown_3y ใช้บอกว่าอดีตเคยติดลบหนักแค่ไหน (ตัวเลขที่คนมักประเมินต่ำไป)
+        # payout_ratio + payout_sustainable ใช้กรองหุ้นที่จ่ายปันผลเกินกำไรออกจากพอร์ตปันผล
+        # ถ้าไม่ใส่ตรงนี้ หน้าเว็บต้องยิงโหลดไฟล์รายตัวทีละ 146 ไฟล์
+        "beta", "volatility", "max_drawdown_3y", "payout_ratio", "payout_sustainable",
     )
     return {k: rec.get(k) for k in keys}
 
