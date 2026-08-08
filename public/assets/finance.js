@@ -245,6 +245,67 @@ function groupOf(asset) {
 }
 
 /**
+ * วัดความกระจุกตัวของพอร์ต — ตัวเลขชุดนี้ส่งให้ AI ใช้เขียนสรุปแผน
+ *
+ * ทำไมต้องคำนวณที่นี่: Plan.md §5 ห้าม AI คำนวณตัวเลขเอง แต่จากการทดสอบ
+ * /api/plan-summary จริง AI ไปบวกน้ำหนักรายตัวเองเพื่อพูดว่า "สามตัวนี้รวมกัน 45%"
+ * รอบนั้นบวกถูก แต่พอ holdings ขึ้นถึง 20 ตัวก็เชื่อไม่ได้ และผู้ใช้จับไม่ได้
+ * เพราะไม่เห็นน้ำหนักดิบ · แก้ด้วยการคิดมาให้เสร็จแล้วห้าม AI บวกเอง
+ *
+ * @param {{asset: object, weight: number}[]} holdings น้ำหนักรวมกันควรได้ 1
+ * @returns {{
+ *   maxSymbol: string|null,   สัญลักษณ์ที่หนักที่สุดในพอร์ต
+ *   maxWeight: number,        น้ำหนักของตัวนั้น (0–1)
+ *   top3Share: number,        น้ำหนักรวมของ 3 ตัวที่หนักที่สุด (0–1)
+ *   topGroupLabel: string|null,  ชื่อกลุ่มที่หนักที่สุด (ใช้ groupOf)
+ *   topGroupShare: number,    น้ำหนักรวมของกลุ่มนั้น (0–1)
+ *   groupCount: number,       จำนวนกลุ่มที่พอร์ตกระจายอยู่
+ * }}
+ */
+export function concentration(holdings) {
+  const list = (Array.isArray(holdings) ? holdings : [])
+    .filter((h) => h && h.asset && Number.isFinite(h.weight) && h.weight > 0);
+
+  const empty = {
+    maxSymbol: null, maxWeight: 0, top3Share: 0,
+    topGroupLabel: null, topGroupShare: 0, groupCount: 0,
+  };
+  if (!list.length) return empty;
+
+  const byWeight = [...list].sort((a, b) => b.weight - a.weight);
+  const heaviest = byWeight[0];
+
+  // รวมน้ำหนักตามกลุ่ม แต่ตัดชื่อตลาดออกจากคีย์ก่อน — groupOf() แยก TH:Energy
+  // กับ US:Energy เป็นคนละกลุ่มโดยเจตนา เพราะ selectDiversified() ต้องใช้แบบนั้น
+  // เพื่อบังคับให้พอร์ตข้ามตลาด แต่ตอนรายงานความเสี่ยงให้คนอ่าน สองตัวนี้คือ
+  // ความเสี่ยงก้อนเดียวกัน — ราคาน้ำมันตกกระทบทั้งไทยและสหรัฐฯ พร้อมกัน
+  // ถ้ารายงานแยกกันผู้ใช้จะเข้าใจว่ากระจายแล้วทั้งที่ยังกระจุกอยู่ที่ปัจจัยเดียว
+  const shares = new Map();
+  for (const h of list) {
+    const label = groupOf(h.asset).split(':').slice(1).join(':') || 'ไม่ระบุ';
+    shares.set(label, (shares.get(label) || 0) + h.weight);
+  }
+  const [topGroupLabel, topGroupShare] = [...shares].sort((a, b) => b[1] - a[1])[0];
+
+  // top-3 มีความหมายเฉพาะพอร์ตที่ใหญ่พอ — หน้าจำลองลงเท่ากันทุกตัว ถ้ามี 4 ตัว
+  // ค่านี้จะเป็น 75% ทุกครั้งด้วยเลขคณิตล้วน ไม่ได้บอกอะไรเรื่องความเสี่ยงเลย
+  // แต่ AI จะอ่านว่า "กระจุกตัวสูง" · ต่ำกว่า 6 ตัวจึงคืน 0 เพื่อให้ฝั่ง prompt
+  // ข้ามบรรทัดนี้ไป แล้วให้ AI บรรยายความกระจุกตัวโดยไม่อ้างตัวเลขรวม
+  const top3Share = list.length >= 6
+    ? byWeight.slice(0, 3).reduce((sum, h) => sum + h.weight, 0)
+    : 0;
+
+  return {
+    maxSymbol: heaviest.asset.symbol || null,
+    maxWeight: heaviest.weight,
+    top3Share,
+    topGroupLabel,
+    topGroupShare,
+    groupCount: shares.size,
+  };
+}
+
+/**
  * เลือกสินทรัพย์แบบไล่จากคะแนนสูงสุด แต่ข้ามตัวที่กลุ่มเต็มโควตาแล้ว
  * ถ้าเลือกได้ไม่ครบเพราะติดเพดาน จะวนอีกรอบโดยผ่อนเพดานให้ครบจำนวนที่ขอ
  */

@@ -32,6 +32,9 @@ const SYSTEM_PROMPT = `คุณคือผู้ช่วยอธิบาย
 
 ## กฎเหล็ก
 1. ห้ามคำนวณตัวเลขใหม่ ห้ามเดาตัวเลขที่ไม่ได้ให้มา ใช้เฉพาะตัวเลขในข้อความที่ได้รับ
+   ห้ามบวกน้ำหนักรายตัวเข้าด้วยกันเองเด็ดขาด เช่นห้ามเขียนว่า "สามตัวนี้รวมกัน 45%"
+   ถ้าไม่ได้ให้ตัวเลขนั้นมาตรงๆ — สัดส่วนรวมที่ใช้ได้อยู่ในหัวข้อ "ความกระจุกตัว"
+   ถ้าหัวข้อนั้นไม่มี ให้พูดถึงความกระจุกตัวเป็นคำบรรยายโดยไม่อ้างตัวเลขรวม
 2. ห้ามพยากรณ์ว่าผลจะออกมาแบบไหน ห้ามบอกว่า "ควรซื้อ/ควรขาย" หรือ "แผนนี้ดี/ไม่ดี"
    ให้บอกว่าตัวเลขที่เห็นแปลว่าอะไร และมีอะไรที่ผู้ใช้ต้องรับได้ก่อนเริ่ม
 3. ต้องพูดถึงด้านลบเสมอ โดยเฉพาะโอกาสขาดทุนและช่วงที่เงินต้นติดลบระหว่างทาง
@@ -58,6 +61,36 @@ function jsonResponse(payload, status = 200) {
 const n = (value) => (Number.isFinite(Number(value)) ? Number(value) : null);
 const pct = (value, digits = 1) => (n(value) === null ? 'ไม่มีข้อมูล' : `${(n(value) * 100).toFixed(digits)}%`);
 const baht = (value) => (n(value) === null ? 'ไม่มีข้อมูล' : `${Math.round(n(value)).toLocaleString('en-US')} บาท`);
+
+/**
+ * บล็อกความกระจุกตัว — คำนวณเสร็จแล้วที่ finance.js ฝั่งนี้แค่จัดรูป
+ *
+ * มีเพราะการทดสอบจริงพบว่า AI ไปบวกน้ำหนักรายตัวเองเพื่อพูดว่า "สามตัวนี้รวมกัน 45%"
+ * ซึ่งขัดกฎข้อ 1 ตรงๆ · ให้ตัวเลขนี้ไปแล้วมันไม่ต้องบวก
+ *
+ * ค่าที่ยังคำนวณไม่ได้จะถูกข้ามทั้งบรรทัด ไม่ส่ง "0%" เข้าไปให้ AI ตีความผิดว่า
+ * พอร์ตกระจายสมบูรณ์แบบ
+ */
+function concentrationLines(c) {
+  if (!c || typeof c !== 'object') return '';
+  const lines = [];
+  const top3 = n(c.top3Share);
+  const max = n(c.maxWeight);
+  const groupShare = n(c.topGroupShare);
+  const groups = n(c.groupCount);
+
+  if (max !== null && max > 0 && SYMBOL_PATTERN.test(String(c.maxSymbol || ''))) {
+    lines.push(`ตัวที่หนักที่สุดในพอร์ต: ${c.maxSymbol} สัดส่วน ${pct(max)}`);
+  }
+  if (top3 !== null && top3 > 0) lines.push(`สามตัวที่หนักที่สุดรวมกัน: ${pct(top3)}`);
+  if (groupShare !== null && groupShare > 0 && typeof c.topGroupLabel === 'string'
+      && /^[฀-๿A-Za-z0-9 /:_-]{1,40}$/.test(c.topGroupLabel)) {
+    lines.push(`กลุ่มที่หนักที่สุด: ${c.topGroupLabel} สัดส่วน ${pct(groupShare)}`);
+  }
+  if (groups !== null && groups > 0) lines.push(`พอร์ตกระจายอยู่ใน ${groups} กลุ่ม`);
+
+  return lines.length ? `\n## ความกระจุกตัว (คำนวณมาแล้ว ห้ามบวกน้ำหนักเอง)\n${lines.join('\n')}\n` : '';
+}
 
 /** รายชื่อสินทรัพย์ในแผน — ตัดตัวที่สัญลักษณ์ผิดรูปแบบทิ้ง ไม่ส่งข้อความอิสระเข้า prompt */
 function holdingLines(holdings) {
@@ -98,7 +131,7 @@ function simContext(p) {
 beta เทียบตลาด: ${n(p.beta) === null ? 'ไม่มีข้อมูล' : n(p.beta).toFixed(2)}
 จำนวนสินทรัพย์: ${n(p.count)} ตัว
 สัดส่วนหุ้นไทยในพอร์ต: ${pct(p.thWeight)}
-
+${concentrationLines(p.concentration)}
 ## รายการสินทรัพย์
 ${holdingLines(p.holdings) || '- ไม่มีข้อมูลรายตัว'}
 
@@ -118,7 +151,7 @@ function incomeContext(p) {
 สัดส่วนหุ้นไทยในพอร์ต: ${pct(p.thWeight)}
 เดือนที่ไม่มีเงินปันผลเข้าเลย: ${gaps.length ? gaps.join(', ') : 'ไม่มี — มีเงินเข้าทุกเดือน'}
 เดือนที่เงินเข้ามากที่สุดคิดเป็นสัดส่วนของทั้งปี: ${pct(p.peakMonthShare)}
-
+${concentrationLines(p.concentration)}
 ## รายการหุ้นในพอร์ต
 ${holdingLines(p.holdings) || '- ไม่มีข้อมูลรายตัว'}
 

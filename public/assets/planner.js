@@ -12,7 +12,7 @@
 import { api, showError } from './api.js';
 import { el, replace } from './dom.js';
 import {
-  DEFAULT_ASSUMPTIONS, MONTH_TH, dividendCalendar, dividendPortfolio,
+  DEFAULT_ASSUMPTIONS, MONTH_TH, concentration, dividendCalendar, dividendPortfolio,
   matchesFocus, portfolioStats, screenDividendAssets, simulate, solveMonthly,
   toTodayValue,
 } from './finance.js';
@@ -640,6 +640,8 @@ function runSimulation() {
     todayValue: toTodayValue(result.median, years, assumptions.inflation),
     mu: stats.mu, sigma: stats.sigma, beta: stats.beta,
     count: selected.length, thWeight,
+    // คิดความกระจุกตัวมาให้เสร็จ ไม่ให้ AI ไปบวกน้ำหนักรายตัวเอง
+    concentration: concentration(holdings),
     holdings: selected.map((a) => ({ symbol: a.symbol, market: a.market, weight: 1 / selected.length })),
   };
 
@@ -806,6 +808,8 @@ function runIncome() {
     kind: 'income',
     target, capital: portfolio.capital, netYield: portfolio.netYield, taxPaid,
     count: portfolio.holdings.length, thWeight,
+    // คิดความกระจุกตัวมาให้เสร็จ ไม่ให้ AI ไปบวกน้ำหนักรายตัวเอง
+    concentration: concentration(portfolio.holdings),
     gapMonths: calendar.gapMonths, peakMonthShare: calendar.peakShare,
     holdings: portfolio.holdings.map((h) => ({
       symbol: h.asset.symbol, market: h.asset.market, weight: h.weight,
