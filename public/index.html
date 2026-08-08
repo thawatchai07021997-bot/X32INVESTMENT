@@ -29,6 +29,13 @@
 
   <div id="notice" class="notice" hidden></div>
 
+  <!-- ดึงราคาสดตามที่ผู้ใช้กด — อัปเดตแค่ราคา ไม่จัดอันดับใหม่
+       (คะแนนทุกระยะคำนวณจากราคาปิดรายวัน ราคาระหว่างวันไม่เปลี่ยนอันดับ) -->
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+    <button id="refresh-prices" class="btn btn-sm" type="button">อัปเดตราคาตลาดเดี๋ยวนี้</button>
+    <span class="small muted" id="refresh-note">ราคาที่แสดงมาจากรอบอัปเดตอัตโนมัติล่าสุด</span>
+  </div>
+
   <!-- แถบดัชนีอ้างอิงตลาด -->
   <div class="ticker" id="ticker"><div class="skeleton">กำลังโหลดดัชนี…</div></div>
 

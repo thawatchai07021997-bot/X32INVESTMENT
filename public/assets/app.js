@@ -388,6 +388,79 @@ async function boot() {
     renderScopeNote(scope, result);
   }
 
+  /* ── อัปเดตราคาสดตามที่ผู้ใช้กด ─────────────────────────
+     เปลี่ยนแค่ราคากับ % วันนี้ ไม่แตะ horizon_scores เลย จึงไม่จัดอันดับใหม่
+     ถ้าจัดใหม่ตามราคาสด อันดับจะแกว่งทั้งวันโดยไม่มีความหมายทางการวิเคราะห์
+     เพราะคะแนนทุกระยะคำนวณจากราคาปิดรายวันกับงบการเงิน */
+  const refreshBtn = document.getElementById('refresh-prices');
+  const refreshNote = document.getElementById('refresh-note');
+
+  async function refreshPrices() {
+    // ต้องส่ง `ticker` ไม่ใช่ `symbol` — หน้าเว็บแสดง "ADVANC" แต่แหล่งข้อมูล
+    // รู้จักในชื่อ "ADVANC.BK" · ส่ง symbol ไปจะไม่ได้ราคาหุ้นไทยเลยทั้ง 49 ตัว
+    const symbols = [
+      ...assets.map((a) => a.ticker),
+      ...(data.benchmarks || []).map((b) => b.ticker),
+    ].filter(Boolean);
+
+    refreshBtn.disabled = true;
+    refreshNote.textContent = 'กำลังดึงราคาล่าสุด…';
+
+    try {
+      const res = await fetch('/api/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols }),
+      });
+      if (res.status === 401) {
+        location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `อัปเดตราคาไม่สำเร็จ (${res.status})`);
+
+      const quotes = body.quotes || {};
+      let updated = 0;
+      const delays = new Set();
+      let anyOpen = false;
+
+      for (const a of assets) {
+        const q = quotes[a.ticker];
+        if (!q || q.price === null) continue;
+        a.price = q.price;
+        if (q.change_pct !== null) a.change_pct_live = q.change_pct / 100;
+        if (q.delayed_by) delays.add(q.delayed_by);
+        if (q.market_state === 'REGULAR') anyOpen = true;
+        updated += 1;
+      }
+      for (const b of data.benchmarks || []) {
+        const q = quotes[b.ticker];
+        if (!q || q.price === null) continue;
+        b.price = q.price;
+        if (q.change_pct !== null) b.change_1d = q.change_pct / 100;
+      }
+
+      renderTicker(data.benchmarks);
+      render();
+
+      // ต้องบอกความช้าของแต่ละตลาดตามจริง ไม่ใช่ปล่อยให้เข้าใจว่าทุกตัวเป็น
+      // ราคาวินาทีนี้ — หุ้นไทยช้า 15 นาที ทองช้า 10 นาที ตามที่แหล่งข้อมูลกำหนด
+      const delayText = delays.size
+        ? ` · บางตลาดส่งราคาช้ากว่าจริง ${[...delays].sort((x, y) => x - y).join('/')} นาที`
+        : '';
+      const stateText = anyOpen ? '' : ' · ตลาดปิดอยู่ ราคานี้คือราคาปิดล่าสุด';
+      refreshNote.textContent = `ราคาล่าสุด ${updated} ตัว ณ `
+        + `${thaiDateTime(body.fetched_at, { timeStyle: 'medium' })}${delayText}${stateText}`
+        + ' · อันดับและคะแนนยังเป็นของรอบอัปเดตรายวัน ไม่ได้คิดใหม่จากราคานี้';
+    } catch (err) {
+      refreshNote.textContent = err.message;
+    } finally {
+      refreshBtn.disabled = false;
+    }
+  }
+
+  refreshBtn.addEventListener('click', refreshPrices);
+
   render();
 }
 
