@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ถาม AI — X32</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1>ถาม AI</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="quota"></p>
+    </div>
+    <nav>
+      <a href="/">← Dashboard</a>
+      <a href="/screener.html">คัดกรองทั้งหมด</a>
+      <a href="/chat.html" aria-current="page">ถาม AI</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>คำถามที่ถามได้</h2>
+    </div>
+    <div id="examples" class="grid grid-2"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>บทสนทนา</h2>
+      <button id="clear" class="mono small" type="button">ล้างบทสนทนา</button>
+    </div>
+    <div id="thread" class="thread"></div>
+  </section>
+
+  <form id="ask" class="ask-bar" autocomplete="off">
+    <textarea id="q" rows="2" maxlength="1000"
+      placeholder="พิมพ์คำถามเป็นภาษาไทย เช่น หุ้นไทยตัวไหนปันผลดีและราคายังไม่แพง"></textarea>
+    <button id="send" type="submit">ถาม</button>
+  </form>
+
+  <p class="muted small" id="disclaimer"></p>
+
+</div>
+
+<script type="module" src="/assets/chat.js"></script>
+</body>
+</html>

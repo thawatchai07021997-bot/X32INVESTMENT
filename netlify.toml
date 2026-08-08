@@ -20,9 +20,14 @@
   status = 200
 
 [[redirects]]
-  from = "/api/chat"
-  to = "/.netlify/functions/chat"
+  from = "/api/quota"
+  to = "/.netlify/functions/quota"
   status = 200
+
+# /api/chat ไม่มี redirect ที่นี่ — เป็น Edge Function ที่ประกาศเส้นทางเองใน
+# netlify/edge-functions/chat.js (export const config = { path: "/api/chat" })
+# ต้องอยู่บน Edge เพราะ Function ฝั่ง Node ตันที่ 10 วินาที ซึ่งไม่พอให้ AI
+# วนเรียกเครื่องมือแล้วเรียบเรียงคำตอบ
 
 [[headers]]
   for = "/*"

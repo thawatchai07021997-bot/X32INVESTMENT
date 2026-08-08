@@ -246,3 +246,40 @@ label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: .78r
 /* กราฟ SVG ปรับความสูงตามสัดส่วนเอง และต้องไม่ทำให้หน้าเลื่อนแนวนอน */
 .chart-box { width: 100%; max-width: 100%; overflow-x: hidden; }
 .chart-box svg { color: var(--ink); }
+
+/* ── หน้าถาม AI ─────────────────────────────────────────── */
+
+.thread { display: flex; flex-direction: column; gap: 14px; min-height: 80px; }
+.thread:empty::after { content: 'ยังไม่มีคำถาม — ลองกดตัวอย่างด้านบนได้เลย';
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: .85rem; }
+
+/* white-space: pre-wrap เพื่อให้ย่อหน้าที่ AI เว้นบรรทัดมาแสดงตามจริง
+   โดยที่เนื้อหายังถูกใส่ผ่าน textContent ไม่ใช่ innerHTML */
+.bubble { border: var(--border) solid var(--line); padding: 14px 16px;
+  white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+.bubble-user { background: var(--ink); color: var(--paper); align-self: flex-end;
+  max-width: 85%; font-family: 'IBM Plex Mono', monospace; font-size: .92rem; }
+.bubble-ai { background: var(--panel); box-shadow: var(--shadow-sm); }
+.bubble-error { border-color: var(--down); box-shadow: 3px 3px 0 var(--down); }
+.bubble-status { margin: 0; font-family: 'IBM Plex Mono', monospace; }
+
+.ask-bar { display: flex; gap: 12px; align-items: stretch; margin: 20px 0 12px; }
+.ask-bar textarea { flex: 1; padding: 12px; font-size: 1rem; font-family: inherit;
+  border: var(--border) solid var(--line); background: var(--paper); color: var(--ink);
+  border-radius: 0; resize: vertical; }
+.ask-bar textarea:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ask-bar button { padding: 0 26px; font-family: 'IBM Plex Mono', monospace; font-weight: 700;
+  text-transform: uppercase; border: var(--border) solid var(--line);
+  background: var(--accent); color: #fff; cursor: pointer; box-shadow: var(--shadow-sm); }
+.ask-bar button:disabled { background: var(--muted); cursor: wait; box-shadow: none; }
+
+.example { text-align: left; padding: 12px 14px; cursor: pointer;
+  border: 2px solid var(--line); background: var(--panel); color: var(--ink);
+  font-family: inherit; font-size: .9rem; }
+.example:hover { background: var(--accent); color: #fff; }
+
+@media (max-width: 640px) {
+  .ask-bar { flex-direction: column; }
+  .ask-bar button { padding: 14px; }
+  .bubble-user { max-width: 100%; }
+}
