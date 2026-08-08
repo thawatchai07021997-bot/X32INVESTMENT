@@ -19,18 +19,16 @@ repo: github.com/thawatchai07021997-bot/X32INVESTMENT (private) → Netlify auto
 ## ติดปัญหา / Blockers
 - เครื่องนี้มี 2 บัญชี GitHub — แก้ถาวรด้วย local `credential.useHttpPath` (ดูความจำ
   `github-two-accounts`) · **อย่าไปแก้ global config**
-- Netlify CLI login หมดอายุได้ ถ้าบอก Not logged in ให้ `npx netlify login` ใหม่
-- กองทุนรวมไทยต้องสมัคร API key ที่ api.sec.or.th ก่อน
+- กองทุนรวมไทยต้องสมัคร API key ที่ api.sec.or.th ก่อน · Netlify CLI login หมดอายุได้
+  (ถ้าบอก Not logged in ให้ `npx netlify login` ใหม่)
 
 ## ไฟล์สำคัญ
 | ไฟล์ | หน้าที่ |
 |---|---|
 | `pipeline/config.py` | universe + น้ำหนัก + เกณฑ์ + ตั้งค่า AI — แก้ที่นี่ที่เดียว · เหตุผลอยู่ในคอมเมนต์ |
-| `pipeline/agents/analyst.py` | Analyst agent — 1 call/สินทรัพย์, prompt caching, cache 7 วัน |
 | `functions/_auth.js` | session cookie (HMAC) — ต้องตรงกับ `edge-functions/lib/auth.js` เสมอ |
 | `netlify/edge-functions/chat.js` | ถาม-ตอบ AI — วน tool loop + stream SSE (ต้องอยู่บน Edge) |
 | `netlify/edge-functions/lib/tools.js` | เครื่องมือ 3 ตัวที่ AI เรียกดูข้อมูล + `summarizeAsset()` |
-| `netlify.toml` | กลไกที่ทำให้ `data-private/` เป็นส่วนตัว |
 
 ## กฎที่ต้องรู้ (อย่าให้เกิดซ้ำ)
 - **กราฟ SVG เขียนเองใน `chart.js`** — CDN ถูกบล็อกในเครือข่ายนี้ และการไม่พึ่ง CDN ทำให้
