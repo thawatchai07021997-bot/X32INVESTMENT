@@ -1,23 +1,28 @@
 # Saved — X32
-> Session ล่าสุด: 2026-08-07
+> Session ล่าสุด: 2026-08-08
 
 ## สถานะปัจจุบัน
-**เฟส 1 + เฟส 2 เสร็จและทดสอบกับ API จริงผ่านแล้ว · ยังไม่ได้ deploy**
+**เฟส 1 + เฟส 2 ใช้งานจริงบน production แล้ว · ผู้ใช้ login เข้าใช้ได้ยืนยันแล้ว**
+เว็บ: https://x32-investment-copilot.netlify.app (site id `63e8f519-f2be-4f7d-82a9-ebf3839a8d03`)
+ตรวจผ่าน: `/data-private/*` → 404 · `/api/data` ไม่มี cookie → 401 · `included_files` ทำงานถูก
+git repo local: commit แรก `481b73c` (185 ไฟล์, branch `main`) — **ยังไม่มี remote**
 pipeline 146 สินทรัพย์ ~13 วินาที (ไม่มี AI) / ~5.5 นาที (มี AI 10 ตัว)
 Dashboard กรอง 3 ชั้น (กลุ่ม × อุตสาหกรรม × ระยะ) · หน้ารายตัวมีเหตุผลจาก AI ครบ 4 ระยะ
 ต้นทุนจริงที่วัดได้ 6.92 บาท/รอบ ≈ 30 บาท/เดือน (รันสัปดาห์ละครั้ง)
 
-## ทำต่อจากตรงนี้
-1. ปรับ prompt ใน `analyst.py` (ตัวแปร `INSTRUCTION`) ถ้าอยากได้สำนวนต่างจากนี้
-   สั่งรันซ้ำด้วย `AI_FORCE=1 ./.venv/Scripts/python.exe pipeline/main.py` (Git Bash)
-2. **ผู้ใช้ต้องทำ:** GitHub repo (private) → push → Netlify → env vars
-   `SITE_PASSWORD`, `SESSION_SECRET`, `ANTHROPIC_API_KEY` (ละเอียดใน README.md)
-4. **เฟส 3:** `functions/chat.js` + `chat.html`, News Agent (RSS), backtest, กองทุนไทย
+## ทำต่อจากตรงนี้ (นัดทำต่อ 2026-08-08)
+1. **GitHub repo (private)** — งานถัดไปที่ตกลงกันไว้ · เครื่องไม่มี `gh` CLI ต้องสร้างผ่าน
+   เว็บ github.com ก่อน (ผู้ใช้ทำ) แล้วผมต่อให้: `git remote add origin <url>` →
+   `git push -u origin main` · จากนั้นใส่ `ANTHROPIC_API_KEY` ใน repo Settings → Secrets
+   → Actions · ครบแล้ว `.github/workflows/daily.yml` จะอัปเดตข้อมูลเองวันละ 2 รอบ
+2. **deploy ใหม่หลังแก้โค้ด:** `cd /c/ProjectX/X32 && npx netlify deploy --prod` (link ไว้แล้ว)
+3. **เฟส 3:** `functions/chat.js` + `chat.html`, News Agent (RSS), backtest, กองทุนไทย
 
 ## ติดปัญหา / Blockers
 - ~~คีย์เก่าที่เคยส่งผ่านแชท~~ **revoke แล้ว (ผู้ใช้ยืนยัน 2026-08-07)** — คีย์ใน `.env`
   เป็นตัวใหม่ · ตรวจแล้วมีเฉพาะ `.env` ที่มีคีย์ และ `.gitignore` ครอบคลุมอยู่
-- ยังไม่มี GitHub repo และยังไม่ได้เชื่อม Netlify — ผู้ใช้ต้องทำเอง
+- ยังไม่มี GitHub repo → ข้อมูลยังไม่อัปเดตอัตโนมัติ ต้องรัน pipeline เองแล้ว `netlify deploy --prod`
+- Netlify CLI login หมดอายุได้ ถ้า `netlify status` บอก Not logged in ให้ `npx netlify login` ใหม่
 - กองทุนรวมไทย (เฟส 3) ต้องสมัคร API key ที่ api.sec.or.th ก่อน
 
 ## ไฟล์สำคัญ
@@ -46,6 +51,9 @@ Dashboard กรอง 3 ชั้น (กลุ่ม × อุตสาหก�
   แก้ด้วย `calibrate_dividend_unit()` ที่เทียบ `dividendRate ÷ ราคา` กับค่าที่ได้ ทั้ง universe ก่อนใช้
 - INTUCH.BK ถอดออกจาก universe แล้ว (ควบรวมกับ GULF ไม่มีข้อมูลใน yfinance)
 - อย่าตั้งชื่อไฟล์ทดสอบว่า `inspect.py` — บังโมดูล stdlib ของ Python
+- **`COM7.json` ใช้ชื่ออุปกรณ์สงวนของ Windows** (CON/PRN/AUX/NUL/COM1-9/LPT1-9) → git
+  index ไม่ได้ แก้ด้วย `safe_filename()` ใน `pipeline/main.py` เติม `_` ต่อท้าย
+  **ต้องแก้คู่กับ `safeFilename()` ใน `public/assets/asset.js` เสมอ** ไม่งั้น 404 เฉพาะบางตัว
 - **คีย์ต้องอยู่ใน `.env` เท่านั้น ไม่ใช่ `.env.example`** — ไฟล์ example ถูก commit ขึ้น repo
   เคยวางผิดไฟล์มาแล้ว 2026-08-07 · เช็คด้วย `grep sk-ant .env.example` ก่อน push เสมอ
 
@@ -53,3 +61,5 @@ Dashboard กรอง 3 ชั้น (กลุ่ม × อุตสาหก�
 - 2026-08-07 (1): กำหนดวัตถุประสงค์ → ออกแบบสถาปัตยกรรม → สร้าง pipeline + เว็บครบเฟส 1
 - 2026-08-07 (2): ตัวกรองกลุ่ม + อุตสาหกรรมใน Dashboard, พื้นปันผลขั้นต่ำ 1.5%,
   เฟส 2 ครบและทดสอบ API จริงผ่าน 10/10 ตัว, เพิ่มรายงานต้นทุนท้ายการรัน
+- 2026-08-07 (3): แก้บั๊กชื่อไฟล์ COM7 → git init + commit แรก `481b73c` →
+  สร้าง Netlify site → deploy production สำเร็จ ผู้ใช้ใช้งานเว็บได้จริงแล้ว
