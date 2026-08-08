@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>อุตสาหกรรมและธีม — X32</title>
+<link rel="stylesheet" href="/assets/brutal.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <h1>อุตสาหกรรมและธีม</h1>
+      <p class="mono small" style="margin:4px 0 0;opacity:.75" id="updated"></p>
+    </div>
+    <nav>
+      <a href="/">← Dashboard</a>
+      <a href="/sectors.html" aria-current="page">อุตสาหกรรม</a>
+      <a href="/screener.html">คัดกรองทั้งหมด</a>
+      <a href="/planner.html">วางแผน</a>
+      <a href="/chat.html">ถาม AI</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>ภาพรวมทุกกลุ่ม</h2>
+      <span class="badge badge-accent" id="group-count"></span>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">แบ่งกลุ่มตาม</span>
+      <div class="tabs" id="kind-tabs" role="tablist"></div>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">ตลาด</span>
+      <div class="chips" id="region-chips" role="tablist"></div>
+    </div>
+
+    <p class="small muted" id="kind-help" style="margin-top:0"></p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>กลุ่ม</th><th>ตลาด</th><th>จำนวน</th>
+            <th>1 เดือน</th><th>6 เดือน</th><th>1 ปี</th>
+            <th>P/E</th><th>ปันผล</th><th>ขาขึ้น</th><th>คะแนนกลาง-ยาว</th>
+          </tr>
+        </thead>
+        <tbody id="group-rows">
+          <tr><td colspan="10" class="skeleton">กำลังโหลด…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-bottom:0">
+      ทุกค่าเป็นมัธยฐานของสมาชิกในกลุ่ม (ไม่ใช่ค่าเฉลี่ย) เพื่อไม่ให้หุ้นตัวเดียวที่วิ่งแรง
+      ทำให้ภาพรวมของกลุ่มผิดไป · คลิกที่แถวเพื่ออ่านบทวิเคราะห์ฉบับเต็ม
+    </p>
+  </section>
+
+  <div id="article"></div>
+
+  <div class="disclaimer">
+    <strong>คำเตือน</strong>
+    <p style="margin:6px 0 0" id="ai-note"></p>
+    <p style="margin:8px 0 0" id="disclaimer"></p>
+  </div>
+
+</div>
+
+<script type="module" src="/assets/sectors.js"></script>
+</body>
+</html>

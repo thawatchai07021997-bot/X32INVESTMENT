@@ -17,6 +17,7 @@
     </div>
     <nav>
       <a href="/">← Dashboard</a>
+      <a href="/sectors.html">อุตสาหกรรม</a>
       <a href="/screener.html">คัดกรองทั้งหมด</a>
       <a href="/planner.html" aria-current="page">วางแผน</a>
       <a href="/chat.html">ถาม AI</a>
@@ -28,23 +29,49 @@
 
   <div id="notice" class="notice" hidden></div>
 
+  <!-- ══ แผนที่บันทึกไว้ ══ -->
+  <div class="card saved-bar">
+    <div>
+      <label for="saved-plans" style="margin-top:0">แผนที่บันทึกไว้</label>
+      <select id="saved-plans" class="mono"></select>
+    </div>
+    <div class="btn-row">
+      <button id="load-plan" class="btn btn-ghost btn-sm" type="button">เปิดแผนนี้</button>
+      <button id="delete-plan" class="btn btn-ghost btn-sm" type="button">ลบ</button>
+      <button id="save-plan" class="btn btn-sm" type="button">บันทึกแผนปัจจุบัน</button>
+    </div>
+  </div>
+
   <div class="tabs" id="tabs">
-    <button class="tab" data-panel="sim" aria-current="page" type="button">จำลองผลตอบแทน</button>
-    <button class="tab" data-panel="income" type="button">พอร์ตปันผล</button>
+    <button class="tab" data-panel="sim" aria-selected="true" type="button">จำลองผลตอบแทน</button>
+    <button class="tab" data-panel="income" aria-selected="false" type="button">พอร์ตปันผล</button>
   </div>
 
   <!-- ══ แท็บ 1: จำลองผลตอบแทน ══ -->
   <section id="panel-sim">
 
     <div class="card">
-      <div class="card-head"><h2>1 · เลือกสินทรัพย์</h2></div>
+      <div class="card-head">
+        <h2>1 · เลือกสินทรัพย์</h2>
+        <button id="clear-picks" class="btn btn-ghost btn-sm" type="button">ล้างสินทรัพย์ที่เลือก</button>
+      </div>
 
-      <div class="grid grid-2">
+      <div class="grid grid-3">
         <div>
           <label for="pick-mode">วิธีเลือก</label>
           <select id="pick-mode" class="mono">
-            <option value="guide">โหมดไกด์ — ให้ระบบจัดให้จากอันดับต้นของแต่ละระยะ</option>
+            <option value="guide">ให้ระบบจัดให้ — จากอันดับต้นของระยะที่ถือ</option>
+            <option value="sector">เลือกตามอุตสาหกรรม</option>
+            <option value="theme">เลือกตามธีมการลงทุน</option>
             <option value="manual">เลือกเอง</option>
+          </select>
+        </div>
+        <div>
+          <label for="focus">ตลาดที่สนใจ</label>
+          <select id="focus" class="mono">
+            <option value="all" selected>ไทย + ต่างประเทศ</option>
+            <option value="th">เฉพาะหุ้นไทย</option>
+            <option value="foreign">เฉพาะต่างประเทศ</option>
           </select>
         </div>
         <div>
@@ -55,6 +82,12 @@
             <option value="high">สูง — ยอมให้เงินต้นติดลบหนัก เพื่อโอกาสโตมาก</option>
           </select>
         </div>
+      </div>
+
+      <div id="group-box" hidden>
+        <label id="group-label">เลือกกลุ่มที่สนใจ (กดได้หลายกลุ่ม)</label>
+        <p class="muted small" style="margin:0 0 8px" id="group-help"></p>
+        <div id="group-chips" class="chips"></div>
       </div>
 
       <div id="manual-box" hidden>
@@ -71,14 +104,25 @@
 
     <div class="card">
       <div class="card-head"><h2>2 · เงินลงทุนและระยะเวลา</h2></div>
-      <div class="grid grid-4">
+
+      <label for="calc-mode">โจทย์ที่อยากให้ตอบ</label>
+      <select id="calc-mode" class="mono">
+        <option value="forward" selected>ลงเท่านี้ ถือเท่านี้ปี จะได้เท่าไร</option>
+        <option value="goal">อยากได้เงินเท่านี้ ต้องลงเดือนละเท่าไร</option>
+      </select>
+
+      <div class="grid grid-4" style="margin-top:14px">
         <div>
           <label for="lump">เงินก้อนวันนี้ (บาท)</label>
           <input type="number" id="lump" class="mono" value="100000" min="0" step="10000">
         </div>
-        <div>
+        <div id="monthly-box">
           <label for="monthly">DCA ทุกเดือน (บาท)</label>
           <input type="number" id="monthly" class="mono" value="5000" min="0" step="1000">
+        </div>
+        <div id="goal-box" hidden>
+          <label for="goal">เป้าหมายเงินปลายทาง (บาท)</label>
+          <input type="number" id="goal" class="mono" value="5000000" min="10000" step="100000">
         </div>
         <div>
           <label for="years">ถือครองกี่ปี</label>
@@ -93,6 +137,7 @@
           </select>
         </div>
       </div>
+
       <details class="assumptions">
         <summary>สมมติฐานผลตอบแทนระยะยาว (กดเพื่อปรับ)</summary>
         <p class="muted small">
@@ -111,7 +156,11 @@
             <input type="number" id="a-inf" class="mono" value="2" step="0.5"></div>
         </div>
       </details>
-      <button id="run-sim" class="btn" type="button" style="margin-top:18px">คำนวณ</button>
+
+      <div class="btn-row" style="margin-top:18px">
+        <button id="run-sim" class="btn" type="button">คำนวณ</button>
+        <button id="reset-sim" class="btn btn-ghost" type="button">ล้างค่าทั้งหมด</button>
+      </div>
     </div>
 
     <div id="sim-result" hidden>
@@ -123,6 +172,11 @@
         <div id="sim-summary"></div>
         <div class="chart-box" id="sim-chart"></div>
         <div id="sim-table"></div>
+        <div class="ai-block">
+          <button id="sim-ai" class="btn btn-ghost btn-sm" type="button">ให้ AI สรุปแผนนี้เป็นภาษาคน</button>
+          <span class="muted small" id="sim-ai-note"></span>
+          <div id="sim-ai-out" class="ai-out" hidden></div>
+        </div>
       </div>
     </div>
 
@@ -147,6 +201,14 @@
           <input type="number" id="min-yield" class="mono" value="3" min="1" max="10" step="0.5">
         </div>
         <div>
+          <label for="income-focus">โฟกัสตลาด</label>
+          <select id="income-focus" class="mono">
+            <option value="all" selected>ไทย + ต่างประเทศ</option>
+            <option value="th">เฉพาะหุ้นไทย</option>
+            <option value="foreign">เฉพาะต่างประเทศ</option>
+          </select>
+        </div>
+        <div>
           <label for="tax">ภาษีหัก ณ ที่จ่าย</label>
           <select id="tax" class="mono">
             <option value="1" selected>คิดภาษี (ไทย 10% · สหรัฐฯ 15%)</option>
@@ -154,7 +216,10 @@
           </select>
         </div>
       </div>
-      <button id="run-income" class="btn" type="button" style="margin-top:18px">จัดพอร์ตให้</button>
+      <div class="btn-row" style="margin-top:18px">
+        <button id="run-income" class="btn" type="button">จัดพอร์ตให้</button>
+        <button id="reset-income" class="btn btn-ghost" type="button">ล้างค่าทั้งหมด</button>
+      </div>
     </div>
 
     <div id="income-result" hidden>
@@ -164,8 +229,20 @@
           <span class="badge badge-accent" id="income-badge"></span>
         </div>
         <div id="income-summary"></div>
+
+        <h3 style="margin:26px 0 4px">เงินปันผลเข้าเดือนไหนบ้าง</h3>
+        <p class="muted small" style="margin:0 0 12px" id="calendar-note"></p>
+        <div id="calendar"></div>
+
+        <h3 style="margin:26px 0 10px">หุ้นในพอร์ต</h3>
         <div class="table-scroll"><table id="income-table"></table></div>
         <div id="income-notes"></div>
+
+        <div class="ai-block">
+          <button id="income-ai" class="btn btn-ghost btn-sm" type="button">ให้ AI สรุปแผนนี้เป็นภาษาคน</button>
+          <span class="muted small" id="income-ai-note"></span>
+          <div id="income-ai-out" class="ai-out" hidden></div>
+        </div>
       </div>
     </div>
 

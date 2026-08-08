@@ -22,13 +22,22 @@ log = logging.getLogger(__name__)
 
 PRICE_CACHE = CACHE_DIR / "prices.parquet"
 INFO_CACHE = CACHE_DIR / "info.json"
+DIVIDEND_CACHE = CACHE_DIR / "dividends.json"
 
 # ดึง .info ทีละตัวพร้อมกันกี่เส้น — สูงกว่านี้เสี่ยงโดน Yahoo จำกัดอัตราการเรียก
 INFO_WORKERS = 6
 
 
-def fetch_prices(tickers: list[str]) -> tuple[dict[str, pd.DataFrame], bool]:
+def fetch_prices(tickers: list[str],
+                 use_cache: bool = True) -> tuple[dict[str, pd.DataFrame], bool]:
     """ดึงราคาย้อนหลังของทุก ticker พร้อมกันเป็นชุดเดียว
+
+    Args:
+        tickers: รายการสัญลักษณ์
+        use_cache: True = เขียน cache หลังดึงสำเร็จ และใช้ cache เมื่อดึงไม่สำเร็จ
+            **ต้องตั้ง False เมื่อดึงชุดย่อย** (เช่นดัชนีอ้างอิง 6 ตัว) ไม่งั้น cache
+            ของ universe เต็มจะถูกเขียนทับด้วยชุดย่อย แล้ววันที่ yfinance ล่มจริง
+            ระบบจะไม่มีราคาหุ้นสำรองเหลือเลย
 
     Returns:
         (prices, is_stale) — prices เป็น dict ticker → DataFrame OHLCV
@@ -41,6 +50,10 @@ def fetch_prices(tickers: list[str]) -> tuple[dict[str, pd.DataFrame], bool]:
             interval="1d",
             group_by="ticker",
             auto_adjust=True,     # ปรับราคาย้อนหลังตามปันผล/แตกพาร์แล้ว
+            # ขอคอลัมน์ Dividends มาด้วยในคำขอเดียวกัน — ใช้หา "เดือนที่ปกติจ่ายปันผล"
+            # ทางเลือกอื่นคือเรียก Ticker(t).dividends ทีละตัว = 146 คำขอเพิ่ม
+            # ซึ่งเสี่ยงโดน Yahoo จำกัดอัตราการเรียกโดยไม่ได้ข้อมูลเพิ่มเลย
+            actions=True,
             threads=True,
             progress=False,
         )
@@ -51,11 +64,14 @@ def fetch_prices(tickers: list[str]) -> tuple[dict[str, pd.DataFrame], bool]:
         if not prices:
             raise ValueError("แยกข้อมูลรายตัวไม่ได้")
 
-        _save_price_cache(prices)
+        if use_cache:
+            _save_price_cache(prices)
         log.info("ดึงราคาสำเร็จ %d/%d ตัว", len(prices), len(tickers))
         return prices, False
 
     except Exception as exc:                      # noqa: BLE001
+        if not use_cache:
+            raise
         log.error("ดึงราคาไม่สำเร็จ (%s) — เปลี่ยนไปใช้ cache", exc)
         cached = _load_price_cache(tickers)
         if not cached:
@@ -70,6 +86,8 @@ def _split_by_ticker(raw: pd.DataFrame,
     """แยก DataFrame คอลัมน์ซ้อน (MultiIndex) ของ yfinance ออกเป็นรายตัว"""
     out: dict[str, pd.DataFrame] = {}
     needed = ["Open", "High", "Low", "Close", "Volume"]
+    # Dividends มาเมื่อขอ actions=True — ถือเป็นของแถม ขาดไปก็ยังวิเคราะห์ราคาได้
+    optional = ["Dividends"]
 
     for ticker in tickers:
         try:
@@ -84,7 +102,8 @@ def _split_by_ticker(raw: pd.DataFrame,
             if not all(c in df.columns for c in needed):
                 continue
 
-            df = df[needed].dropna(subset=["Close"])
+            keep = needed + [c for c in optional if c in df.columns]
+            df = df[keep].dropna(subset=["Close"])
             if len(df) < MIN_BARS:
                 log.warning("%s มีข้อมูลแค่ %d แท่ง — ข้าม", ticker, len(df))
                 continue
@@ -132,7 +151,69 @@ def fetch_info(tickers: list[str]) -> dict[str, dict]:
     return results
 
 
+def extract_dividends(prices: dict[str, pd.DataFrame]) -> dict[str, list[dict]]:
+    """แยกรายการจ่ายปันผลออกจากคอลัมน์ Dividends ที่มาพร้อมราคา
+
+    ไม่มีการเรียกเครือข่ายเพิ่ม — คอลัมน์นี้มาจาก actions=True ใน fetch_prices()
+
+    Returns:
+        {ticker: [{"date": "YYYY-MM-DD", "amount": float}, ...]} เรียงตามวันที่
+        ตัวที่รอบนี้อ่านคอลัมน์ไม่ได้ (เช่นใช้ cache ราคารุ่นเก่าที่ยังไม่มีคอลัมน์นี้)
+        จะใช้ข้อมูลจากไฟล์ cache แทน เพื่อให้ปฏิทินปันผลไม่หายไปทั้งหน้า
+    """
+    cached = _load_dividend_cache()
+    fresh: dict[str, list[dict]] = {}
+    covered: set[str] = set()
+
+    for ticker, df in prices.items():
+        if "Dividends" not in df.columns:
+            continue
+        covered.add(ticker)
+        series = pd.to_numeric(df["Dividends"], errors="coerce").fillna(0.0)
+        paid = series[series > 0]
+        if paid.empty:
+            continue
+        fresh[ticker] = [
+            {"date": idx.strftime("%Y-%m-%d"), "amount": round(float(v), 6)}
+            for idx, v in paid.items()
+        ]
+
+    # ตัวที่อ่านคอลัมน์ได้ถือเป็นข้อมูลสดเสมอ ต้องทับของเดิมแม้จะกลายเป็น "ไม่มีการจ่าย"
+    # ไม่งั้นบริษัทที่เลิกจ่ายปันผลจะยังโชว์ปฏิทินเดิมค้างอยู่ตลอดไป
+    merged = {t: v for t, v in cached.items() if t not in covered}
+    merged.update(fresh)
+
+    if covered:
+        _save_dividend_cache(merged)
+        log.info("อ่านประวัติปันผลได้ %d ตัว (จากราคาที่ดึงมาแล้ว ไม่มีคำขอเพิ่ม)", len(fresh))
+    else:
+        log.warning("ราคาที่ได้ไม่มีคอลัมน์ Dividends — ใช้ปฏิทินปันผลจาก cache %d ตัว",
+                    len(merged))
+    return merged
+
+
 # ── Cache ───────────────────────────────────────────────────────────────
+
+
+def _save_dividend_cache(data: dict[str, list[dict]]) -> None:
+    try:
+        DIVIDEND_CACHE.write_text(
+            json.dumps({"updated": datetime.now(timezone.utc).isoformat(),
+                        "data": data}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    except Exception as exc:                      # noqa: BLE001
+        log.warning("เขียน cache ปันผลไม่สำเร็จ: %s", exc)
+
+
+def _load_dividend_cache() -> dict[str, list[dict]]:
+    if not DIVIDEND_CACHE.exists():
+        return {}
+    try:
+        return json.loads(DIVIDEND_CACHE.read_text(encoding="utf-8")).get("data", {})
+    except Exception as exc:                      # noqa: BLE001
+        log.warning("อ่าน cache ปันผลไม่สำเร็จ: %s", exc)
+        return {}
 
 
 def _save_price_cache(prices: dict[str, pd.DataFrame]) -> None:

@@ -53,6 +53,9 @@ export default async function handler(request) {
   let target;
   if (file === 'dashboard') {
     target = path.join(dataDir, 'dashboard.json');
+  } else if (file === 'sectors') {
+    // บทวิเคราะห์รายอุตสาหกรรม/ธีม — แยกไฟล์เพราะยาวและมีแค่หน้าเดียวที่ใช้
+    target = path.join(dataDir, 'sectors.json');
   } else if (file === 'asset') {
     const symbol = url.searchParams.get('symbol') || '';
     if (!SYMBOL_PATTERN.test(symbol)) {

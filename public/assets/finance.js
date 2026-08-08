@@ -107,8 +107,9 @@ function randomNormal() {
  * @param {number} p.lumpSum เงินก้อนที่ลงวันนี้
  * @param {number} p.monthly เงินที่เติมทุกเดือน (DCA)
  * @param {number} p.runs    จำนวนเส้นทางที่จำลอง
+ * @param {number|null} p.goal เป้าหมายเงินปลายทาง (ใส่แล้วจะได้โอกาสไปถึงกลับมาด้วย)
  */
-export function simulate({ mu, sigma, years, lumpSum = 0, monthly = 0, runs = 3000 }) {
+export function simulate({ mu, sigma, years, lumpSum = 0, monthly = 0, runs = 3000, goal = null }) {
   const months = Math.round(years * 12);
   const drift = (mu - (sigma ** 2) / 2) / 12;
   const shock = sigma / Math.sqrt(12);
@@ -175,7 +176,43 @@ export function simulate({ mu, sigma, years, lumpSum = 0, monthly = 0, runs = 30
     lossProbability: finals.reduce((n, v) => n + (v < invested ? 1 : 0), 0) / runs,
     medianDrawdown: at(drawdowns, 0.50),
     worstDrawdown: at(drawdowns, 0.10),
+    // โอกาสไปถึงเป้าหมาย — ตัวเลขนี้สำคัญกว่าค่ากลางเมื่อผู้ใช้ตั้งเป้าไว้แล้ว
+    // เพราะแผนที่ "ค่ากลางถึงเป้าพอดี" แปลว่ามีโอกาสพลาดราวครึ่งหนึ่ง
+    goalProbability: goal
+      ? finals.reduce((n, v) => n + (v >= goal ? 1 : 0), 0) / runs
+      : null,
   };
+}
+
+/**
+ * คิดย้อนกลับ: อยากได้เงิน X บาทในอีก N ปี ต้องลงเดือนละเท่าไร
+ *
+ * แก้สมการจากเส้นทาง "กรณีกลาง" ของแบบจำลองเดียวกับ simulate() คือโตเดือนละ
+ * exp((mu − σ²/2)/12) จึงได้คำตอบเดิมทุกครั้ง ไม่ต้องสุ่มหลายพันรอบแล้วไล่หา
+ *
+ * **ข้อควรระวังที่ต้องบอกผู้ใช้เสมอ:** คำตอบนี้ทำให้ "กรณีกลาง" ถึงเป้าพอดี
+ * ซึ่งแปลว่าโอกาสไปถึงจริงราว 50% เท่านั้น ถ้าอยากมั่นใจกว่านั้นต้องลงมากกว่านี้
+ * — ผู้เรียกจึงควรเอาค่าที่ได้ไปรัน simulate() ต่อพร้อม goal เพื่อดูโอกาสจริง
+ *
+ * @returns {{monthly:number, fromLumpSum:number, alreadyEnough:boolean}}
+ */
+export function solveMonthly({ target, years, lumpSum = 0, mu, sigma }) {
+  const months = Math.round(years * 12);
+  const rate = Math.exp((mu - (sigma ** 2) / 2) / 12);
+  const growth = rate ** months;
+  const fromLumpSum = lumpSum * growth;
+
+  if (fromLumpSum >= target) {
+    return { monthly: 0, fromLumpSum, alreadyEnough: true };
+  }
+
+  // ตัวคูณของเงินงวด ต้องตรงกับลำดับใน simulate() ที่เติมเงินต้นเดือน
+  // แล้วจึงให้ตลาดทำงาน (annuity-due) ไม่งั้นคำตอบจะเพี้ยนจากผลจำลองเล็กน้อย
+  const factor = rate === 1
+    ? months
+    : (rate * (growth - 1)) / (rate - 1);
+
+  return { monthly: (target - fromLumpSum) / factor, fromLumpSum, alreadyEnough: false };
 }
 
 /**
@@ -285,9 +322,12 @@ export function dividendPortfolio(monthlyTarget, candidates, opt = {}) {
  * และตัดอัตราปันผลที่สูงเกิน 12% ออกด้วย — ระดับนั้นมักเป็นสัญญาณว่าราคาเพิ่งร่วงแรง
  * หรือเป็นการจ่ายพิเศษครั้งเดียว ไม่ใช่กระแสเงินที่พึ่งพาได้
  */
-export function screenDividendAssets(assets, { minYield = 0.03, maxYield = 0.12 } = {}) {
+export function screenDividendAssets(assets, {
+  minYield = 0.03, maxYield = 0.12, focus = 'all',
+} = {}) {
   return assets
     .filter((a) => {
+      if (!matchesFocus(a, focus)) return false;
       const y = a.dividend_yield || 0;
       if (y < minYield || y > maxYield) return false;
       if (a.payout_sustainable === 0) return false;
@@ -295,4 +335,92 @@ export function screenDividendAssets(assets, { minYield = 0.03, maxYield = 0.12 
       return true;
     })
     .sort((a, b) => (b.score_dividend || 0) - (a.score_dividend || 0));
+}
+
+/**
+ * ตัวกรอง "ในประเทศ / ต่างประเทศ / ทั้งสอง"
+ *
+ * ทองคำ (market = GLOBAL) นับเป็นต่างประเทศ เพราะราคาอ้างอิงตลาดโลกและ
+ * ผู้ถือรับความเสี่ยงค่าเงินเหมือนสินทรัพย์ต่างประเทศตัวอื่น
+ * ต้องให้ผลตรงกับ region_of() ใน pipeline/quant/sectors.py เสมอ
+ */
+export function matchesFocus(asset, focus) {
+  if (focus === 'th') return asset.market === 'TH';
+  if (focus === 'foreign') return asset.market !== 'TH';
+  return true;
+}
+
+/** ชื่อเดือนภาษาไทยแบบย่อ — index 0 ไม่ใช้ เพื่อให้ MONTH_TH[3] = มี.ค. ตรงกับเลขเดือนจริง */
+export const MONTH_TH = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+/**
+ * กระจายเงินปันผลทั้งปีของพอร์ตลงเป็นรายเดือน
+ *
+ * ทำไมต้องมี: "ปันผล 30,000 บาทต่อเดือน" ที่หน้าเว็บบอก เป็นค่าเฉลี่ยที่เกลี่ยแล้ว
+ * ของจริงคือหุ้นไทยจ่ายปีละ 1-2 ครั้ง เงินจึงเข้าเป็นก้อนใหญ่ไม่กี่เดือนแล้วเงียบไป
+ * ทั้งปี ถ้าผู้ใช้ตั้งใจใช้เงินก้อนนี้เป็นค่าใช้จ่ายรายเดือนจริง ต้องเห็นภาพนี้ก่อน
+ *
+ * ใช้สัดส่วนเงินที่จ่ายจริงในแต่ละเดือนย้อนหลัง 3 ปี (dividend_month_weights)
+ * ถ้าไม่มีก็เกลี่ยเท่ากันในเดือนที่รู้ว่าเคยจ่าย
+ *
+ * @param holdings [{asset, netAnnual}] จาก dividendPortfolio()
+ */
+export function dividendCalendar(holdings) {
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1, amount: 0, symbols: [],
+  }));
+  const unknown = { amount: 0, symbols: [] };
+  let lowConfidence = 0;
+
+  for (const { asset, netAnnual } of holdings) {
+    const weights = asset.dividend_month_weights || {};
+    const listed = asset.dividend_months || [];
+    // คีย์ของ dividend_month_weights เป็นสตริงเสมอ (มาจาก JSON) ต้องแปลงก่อนใช้
+    const entries = Object.entries(weights)
+      .map(([m, w]) => [Number(m), Number(w)])
+      .filter(([m, w]) => m >= 1 && m <= 12 && w > 0);
+
+    if (asset.dividend_confidence === 'low') lowConfidence += 1;
+
+    if (entries.length) {
+      // ปรับให้ผลรวมเป็น 1 เผื่อบางเดือนถูกตัดออกจากเงื่อนไขข้างบน
+      const sum = entries.reduce((s, [, w]) => s + w, 0);
+      for (const [m, w] of entries) {
+        months[m - 1].amount += netAnnual * (w / sum);
+        months[m - 1].symbols.push(asset.symbol);
+      }
+    } else if (listed.length) {
+      for (const m of listed) {
+        if (m < 1 || m > 12) continue;
+        months[m - 1].amount += netAnnual / listed.length;
+        months[m - 1].symbols.push(asset.symbol);
+      }
+    } else {
+      // ไม่รู้ปฏิทินของตัวนี้ — ห้ามเกลี่ยลง 12 เดือนเพราะจะทำให้กราฟดูสม่ำเสมอ
+      // กว่าความจริง ต้องแยกออกมาให้ผู้ใช้เห็นว่ามีส่วนที่ระบบไม่รู้
+      unknown.amount += netAnnual;
+      unknown.symbols.push(asset.symbol);
+    }
+  }
+
+  const total = months.reduce((s, m) => s + m.amount, 0);
+  const gapMonths = total > 0
+    ? months.filter((m) => m.amount <= 0).map((m) => m.month)
+    : [];
+  const peak = months.reduce((best, m) => (m.amount > best.amount ? m : best), months[0]);
+
+  return {
+    months,
+    unknown,
+    total,
+    gapMonths,
+    lowConfidence,
+    peakMonth: total > 0 ? peak.month : null,
+    peakShare: total > 0 ? peak.amount / total : 0,
+    // เดือนที่แย่ที่สุดได้เงินคิดเป็นกี่เท่าของค่าเฉลี่ยรายเดือน — วัดความสม่ำเสมอ
+    evenness: total > 0
+      ? Math.min(...months.map((m) => m.amount)) / (total / 12)
+      : 0,
+  };
 }

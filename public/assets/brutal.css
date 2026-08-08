@@ -315,3 +315,73 @@ label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: .78r
 input[type="number"] { width: 100%; padding: 12px; font-size: 1rem;
   font-family: 'IBM Plex Mono', monospace; border: var(--border) solid var(--line);
   background: var(--paper); color: var(--ink); border-radius: 0; }
+
+/* แถวปุ่ม — ปุ่มหลักกับปุ่มล้างค่าอยู่บรรทัดเดียวกัน */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn-sm { font-size: .74rem; padding: 8px 14px; }
+
+/* แถบแผนที่บันทึกไว้ — อยู่บนสุดของหน้าเพื่อให้กลับมาทำงานต่อได้ทันที */
+.saved-bar { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.saved-bar > div:first-child { flex: 1 1 320px; }
+.saved-bar select:disabled { opacity: .55; }
+
+/* กล่องคำตอบของ AI — pre-wrap เพื่อให้ย่อหน้าที่ AI เว้นมาแสดงตามจริง
+   โดยเนื้อหายังถูกใส่ผ่าน textContent ไม่ใช่ innerHTML */
+.ai-block { margin-top: 22px; border-top: 2px solid var(--line); padding-top: 14px;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ai-out { flex-basis: 100%; border: var(--border) solid var(--line); background: var(--panel);
+  box-shadow: var(--shadow-sm); padding: 14px 16px; white-space: pre-wrap;
+  overflow-wrap: anywhere; line-height: 1.7; }
+
+/* ── ปฏิทินปันผล 12 เดือน ──────────────────────────────── */
+.calendar { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;
+  border: 2px solid var(--line); padding: 10px 8px; background: var(--panel); }
+.cal-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.cal-amount { font-size: .62rem; color: var(--muted); white-space: nowrap; }
+.cal-bar { width: 100%; height: 96px; border: 2px solid var(--line); background: var(--paper);
+  display: flex; align-items: flex-end; }
+.cal-bar > i { display: block; width: 100%; background: var(--accent); min-height: 2px; }
+.cal-month { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; white-space: nowrap; }
+.cal-empty .cal-bar { background: repeating-linear-gradient(45deg,
+  transparent, transparent 4px, rgba(128,128,128,.22) 4px, rgba(128,128,128,.22) 8px); }
+.cal-empty .cal-month { color: var(--muted); }
+@media (max-width: 700px) {
+  .calendar { grid-template-columns: repeat(6, 1fr); row-gap: 12px; }
+}
+
+/* ── หน้าอุตสาหกรรม (บทความยาว) ────────────────────────── */
+.article { padding: 20px 22px; }
+.article .lead { margin-bottom: 20px; }
+h3.sec { margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line);
+  font-size: .92rem; letter-spacing: .02em; }
+/* บทความอ่านยาว — จำกัดความกว้างบรรทัดไว้ราว 80 ตัวอักษร ตาที่ไล่บรรทัดจะไม่หลง */
+.read { max-width: 72ch; line-height: 1.85; margin: 0 0 14px; }
+ul.read, ol.read { padding-left: 22px; }
+ul.read li { margin-bottom: 8px; }
+
+.points { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2px;
+  background: var(--line); border: 2px solid var(--line); }
+.point { background: var(--panel); padding: 14px 16px; }
+.point h4 { margin: 0 0 6px; font-family: 'IBM Plex Mono', monospace; font-size: .82rem;
+  text-transform: uppercase; letter-spacing: .02em; }
+.point .read { margin-bottom: 0; }
+
+.picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.pick-card { border: 2px solid var(--line); padding: 12px 14px; background: var(--panel); }
+.pick-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.pick-head a { font-weight: 700; font-size: 1.02rem; }
+.pick-stats { color: var(--muted); margin-bottom: 8px; }
+.pick-card .read { margin-bottom: 0; }
+
+.jargon { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0;
+  border-left: var(--border) solid var(--accent); padding-left: 14px; }
+.jargon dt { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: .86rem; }
+.jargon dd { margin: 0; font-size: .9rem; }
+@media (max-width: 620px) {
+  .jargon { grid-template-columns: 1fr; gap: 2px 0; }
+  .jargon dd { margin-bottom: 10px; }
+}
+
+/* แถวที่กำลังเปิดอ่านอยู่ — ต้องหาเจอเมื่อเลื่อนกลับขึ้นมาจากบทความ */
+tr.row-open { background: var(--ink); color: var(--paper); }
+tr.row-open .muted { color: var(--paper); opacity: .7; }

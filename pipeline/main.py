@@ -33,8 +33,8 @@ import pandas as pd                                            # noqa: E402
 from config import (ASSET_DIR, BENCHMARKS, DATA_DIR, DISCLAIMER,   # noqa: E402
                     MIN_DIVIDEND_YIELD_FOR_RANK, TOP_N_PER_HORIZON,
                     build_universe)
-from agents import analyst                                      # noqa: E402
-from quant import factors, indicators, screener                 # noqa: E402
+from agents import analyst, sector_analyst                      # noqa: E402
+from quant import dividends, factors, indicators, screener, sectors  # noqa: E402
 from sources import gold, stocks                                # noqa: E402
 
 # บังคับ UTF-8 ก่อนตั้ง logging — ค่าเริ่มต้นบน Windows คือ cp874 ซึ่งทำให้
@@ -56,9 +56,11 @@ CHART_BARS = 252
 
 def build_records(prices: dict[str, pd.DataFrame],
                   info_map: dict[str, dict],
-                  universe: list[dict]) -> list[dict]:
-    """รวมข้อมูลราคา + พื้นฐาน + ผลวิเคราะห์เทคนิค เป็น record ต่อสินทรัพย์"""
+                  universe: list[dict],
+                  dividend_events: dict[str, list[dict]] | None = None) -> list[dict]:
+    """รวมข้อมูลราคา + พื้นฐาน + ผลวิเคราะห์เทคนิค + ปฏิทินปันผล เป็น record ต่อสินทรัพย์"""
     records: list[dict] = []
+    dividend_events = dividend_events or {}
 
     # ตรวจหน่วยของอัตราปันผลครั้งเดียวจากทั้ง universe ก่อนใช้งาน
     dividend_divisor = factors.calibrate_dividend_unit(info_map)
@@ -79,7 +81,9 @@ def build_records(prices: dict[str, pd.DataFrame],
             info_map.get(ticker, {}), dividend_divisor
         )
 
-        record = {**item, **fundamentals, **tech}
+        calendar = dividends.analyse(dividend_events.get(ticker, []))
+
+        record = {**item, **fundamentals, **tech, **calendar}
         record["score_technical"] = indicators.technical_score(tech)
         # ตั้งชื่อสำรองเมื่อ yfinance ไม่คืนชื่อบริษัท (พบบ่อยในหุ้นไทย)
         record["name"] = record.get("name") or item["symbol"]
@@ -93,7 +97,8 @@ def fetch_benchmarks() -> list[dict]:
     """ดึงดัชนีอ้างอิงตลาดสำหรับแสดงบนหัว Dashboard"""
     tickers = list(BENCHMARKS)
     try:
-        prices, _ = stocks.fetch_prices(tickers)
+        # use_cache=False — ชุดนี้เป็นดัชนีไม่กี่ตัว ถ้าเขียน cache จะทับราคาหุ้นทั้ง universe
+        prices, _ = stocks.fetch_prices(tickers, use_cache=False)
     except Exception as exc:                      # noqa: BLE001
         log.warning("ดึงดัชนีอ้างอิงไม่สำเร็จ: %s", exc)
         return []
@@ -166,6 +171,48 @@ def write_asset_files(records: list[dict], prices: dict[str, pd.DataFrame],
         )
 
 
+def group_index(groups: list[dict]) -> list[dict]:
+    """ย่อรายการกลุ่มให้เหลือแค่ "ชื่อกลุ่มมีสมาชิกอะไรบ้าง"
+
+    หน้าวางแผนต้องรู้แค่นี้เพื่อให้ผู้ใช้เลือกลงทุนตามอุตสาหกรรมหรือตามธีมได้
+    ถ้าให้มันโหลด sectors.json ทั้งไฟล์จะได้บทวิเคราะห์ยาวหลายหมื่นตัวอักษรติดมาด้วย
+    โดยไม่ได้ใช้เลย
+    """
+    return [{
+        "id": g["id"], "kind": g["kind"], "region": g["region"],
+        "region_label": g["region_label"], "label": g["label"],
+        "rationale": g["rationale"], "members": g["members"],
+    } for g in groups]
+
+
+def write_sector_file(groups: list[dict], generated_at: str) -> None:
+    """เขียน sectors.json — สถิติรายกลุ่ม + บทวิเคราะห์ของ AI
+
+    แยกไฟล์จาก dashboard.json โดยตั้งใจ: บทวิเคราะห์ยาวรวมกันหลายหมื่นตัวอักษร
+    ถ้ารวมไว้ไฟล์เดียว หน้า Dashboard ที่ไม่ได้ใช้ข้อมูลนี้จะต้องโหลดตามไปด้วยทุกครั้ง
+    """
+    analysis = sector_analyst.analyse(groups)
+    written = analysis.get("groups", {})
+
+    payload = {
+        "generated_at": generated_at,
+        "ai_generated_at": analysis.get("generated_at"),
+        "groups": [{**g, "ai": written.get(g["id"])} for g in groups],
+        "disclaimer": DISCLAIMER,
+        # ป้ายกำกับที่หน้าเว็บต้องแสดงคู่กับบทความเสมอ — ผู้ใช้ต้องแยกออกว่า
+        # ส่วนไหนคือตัวเลขจากระบบ ส่วนไหนคือความรู้ทั่วไปของโมเดลที่มีวันหมดอายุ
+        "ai_note": (
+            "ตัวเลขทุกตัวในหน้านี้คำนวณจากข้อมูลราคาและงบการเงินที่ระบบดึงมา "
+            "ส่วนคำอธิบายกลไกของอุตสาหกรรมเป็นความรู้ทั่วไปของโมเดล AI "
+            "ซึ่งอาจไม่ทันเหตุการณ์ล่าสุด ใช้เป็นกรอบความเข้าใจ ไม่ใช่ข้อเท็จจริงล่าสุด"
+        ),
+    }
+    (DATA_DIR / "sectors.json").write_text(
+        json.dumps(payload, ensure_ascii=False, allow_nan=False),
+        encoding="utf-8",
+    )
+
+
 def slim(rec: dict) -> dict:
     """ตัด record ให้เหลือเฉพาะฟิลด์ที่ Dashboard ใช้ — ลดขนาดไฟล์ที่ส่งให้เว็บ"""
     keys = (
@@ -181,6 +228,12 @@ def slim(rec: dict) -> dict:
         # payout_ratio + payout_sustainable ใช้กรองหุ้นที่จ่ายปันผลเกินกำไรออกจากพอร์ตปันผล
         # ถ้าไม่ใส่ตรงนี้ หน้าเว็บต้องยิงโหลดไฟล์รายตัวทีละ 146 ไฟล์
         "beta", "volatility", "max_drawdown_3y", "payout_ratio", "payout_sustainable",
+        # ── ปฏิทินปันผล (ใช้โดยแท็บพอร์ตปันผล) ──
+        # บอกว่าเงินปันผลจะเข้าเดือนไหนบ้าง ผู้ใช้จะได้วางแผนจังหวะเข้าซื้อก่อน XD
+        # และเห็นว่าเดือนไหนของปีขาดช่วง ควรเติมหุ้นที่จ่ายเดือนนั้น
+        "dividend_months", "dividend_month_weights", "dividend_freq",
+        "dividend_pattern", "dividend_confidence", "dividend_last_date",
+        "dividend_paused",
     )
     return {k: rec.get(k) for k in keys}
 
@@ -195,8 +248,10 @@ def main() -> int:
 
     prices, is_stale = stocks.fetch_prices(tickers)
     info_map = stocks.fetch_info(list(prices))
+    # ประวัติปันผลมาพร้อมราคาในคำขอเดียวกัน ไม่มีการเรียกเครือข่ายเพิ่ม
+    dividend_events = stocks.extract_dividends(prices)
 
-    records = build_records(prices, info_map, universe)
+    records = build_records(prices, info_map, universe, dividend_events)
     if not records:
         log.error("ไม่มีข้อมูลให้วิเคราะห์เลย — หยุดการทำงาน")
         return 1
@@ -207,6 +262,9 @@ def main() -> int:
         screener.compute_horizon_scores(rec)
 
     ranked = screener.rank_by_horizon(records)
+    # จัดกลุ่มก่อนเขียนไฟล์ เพราะทั้ง dashboard.json (รายชื่อย่อ) และ
+    # sectors.json (ฉบับเต็ม + บทวิเคราะห์) ต้องใช้ผลชุดเดียวกัน
+    groups = sectors.build_all(records)
 
     # วิเคราะห์ด้วย AI เฉพาะอันดับต้น — ถ้าไม่มี API key หรือเรียกไม่สำเร็จ
     # จะคืน dict ว่างและ pipeline ทำงานต่อได้ตามปกติ
@@ -242,6 +300,9 @@ def main() -> int:
             for key, items in screener.movers(records).items()
         },
         "all_assets": [slim(r) for r in records],
+        # รายชื่อกลุ่มอุตสาหกรรมและธีม — หน้าวางแผนใช้เลือกลงทุนทั้งกลุ่มทีเดียว
+        # (สถิติและบทวิเคราะห์ฉบับเต็มอยู่ใน sectors.json ที่โหลดเฉพาะหน้าอุตสาหกรรม)
+        "groups": group_index(groups),
         # บอกเว็บว่าตัวไหนมีบทวิเคราะห์ AI จะได้ขึ้นป้ายบอกได้โดยไม่ต้องโหลดไฟล์รายตัว
         "ai_symbols": sorted(ai_analysis.get("assets", {})),
         "disclaimer": DISCLAIMER,
@@ -252,9 +313,10 @@ def main() -> int:
         encoding="utf-8",
     )
     write_asset_files(records, prices, started.isoformat(), ai_analysis)
+    write_sector_file(groups, started.isoformat())
 
     elapsed = (datetime.now(timezone.utc) - started).total_seconds()
-    log.info("เสร็จสิ้นใน %.1f วินาที — เขียน dashboard.json + %d ไฟล์รายตัว",
+    log.info("เสร็จสิ้นใน %.1f วินาที — เขียน dashboard.json + sectors.json + %d ไฟล์รายตัว",
              elapsed, len(records))
     return 0
 

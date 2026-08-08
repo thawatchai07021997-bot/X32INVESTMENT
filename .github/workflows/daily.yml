@@ -68,7 +68,19 @@ jobs:
               sys.exit(f"มีสินทรัพย์แค่ {len(assets)} ตัว — น้อยผิดปกติ ไม่ commit")
           if not data.get("horizons"):
               sys.exit("ไม่มีผลจัดอันดับตามระยะ — ไม่ commit")
-          print(f"ตรวจผ่าน: {len(assets)} สินทรัพย์")
+
+          sector_path = Path("data-private/sectors.json")
+          if not sector_path.exists():
+              sys.exit("ไม่พบ sectors.json")
+          groups = json.loads(sector_path.read_text(encoding="utf-8")).get("groups", [])
+          if len(groups) < 5:
+              sys.exit(f"จัดกลุ่มอุตสาหกรรมได้แค่ {len(groups)} กลุ่ม — น้อยผิดปกติ ไม่ commit")
+
+          # บทวิเคราะห์ของ AI ขาดได้โดยไม่ถือว่าล้มเหลว — เขียนใหม่เดือนละครั้งเท่านั้น
+          # และหน้าเว็บแสดงตัวเลขของกลุ่มได้อยู่แล้วแม้ยังไม่มีบทความ
+          written = sum(1 for g in groups if g.get("ai"))
+          print(f"ตรวจผ่าน: {len(assets)} สินทรัพย์ · {len(groups)} กลุ่ม "
+                f"(มีบทวิเคราะห์ {written} กลุ่ม)")
           PY
 
       - name: commit และ push ข้อมูลใหม่
