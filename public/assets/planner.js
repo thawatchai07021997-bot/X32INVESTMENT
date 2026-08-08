@@ -64,6 +64,9 @@ let selectedGroups = new Set();
 // ผลการคำนวณล่าสุด — เก็บไว้ให้ปุ่ม "ให้ AI สรุป" ส่งต่อโดยไม่ต้องคำนวณซ้ำ
 let lastSim = null;
 let lastIncome = null;
+// บทสรุปของ AI ต่อแท็บ — ต้องเก็บแยกจาก DOM เพราะ `savePlan()` ต้องหยิบไปบันทึก
+// และ `hideResults()` ล้าง DOM ทิ้งทุกครั้งที่เปิดแผนใหม่
+let aiSummary = { sim: null, income: null };
 
 const $ = (id) => document.getElementById(id);
 const val = (id) => $(id).value;
@@ -105,11 +108,18 @@ function readStore(key, fallback) {
   }
 }
 
+/**
+ * คืน true เมื่อเขียนสำเร็จ — ผู้เรียกต้องเช็ค ไม่ใช่เดาว่าสำเร็จ
+ * เพราะบทสรุปของ AI ทำให้แต่ละแผนใหญ่ขึ้นหลายกิโลไบต์ โอกาสชน quota
+ * ของ localStorage จึงมีจริง และถ้าบอกผู้ใช้ว่า "บันทึกแล้ว" ทั้งที่ไม่ได้บันทึก
+ * เขาจะรู้ตอนเปิดมาแล้วไม่เจอ ซึ่งสายเกินกว่าจะทำอะไรได้
+ */
 function writeStore(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    // เต็มหรือถูกปิด — ไม่ใช่เรื่องคอขาดบาดตาย ปล่อยให้ใช้งานต่อได้โดยไม่จำค่า
+    return false;
   }
 }
 
@@ -139,11 +149,41 @@ function savePlan() {
   const name = (prompt('ตั้งชื่อแผนนี้', suggestion) || '').trim();
   if (!name) return;
 
-  plans.unshift({ id: String(Date.now()), name, savedAt: new Date().toISOString(), ...readForm() });
+  // เก็บบทสรุปของ AI ไปด้วย — แต่ละครั้งที่เรียกเสียเงินและกินโควตารายวัน
+  // ถ้าไม่เก็บ ผู้ใช้ต้องจ่ายซ้ำเพื่ออ่านข้อความเดิมที่เคยได้มาแล้ว
+  // เก็บทั้งสองแท็บเพราะ `readForm()` เก็บค่าทั้งฟอร์มอยู่แล้ว ไม่ใช่แค่แท็บที่เปิด
+  plans.unshift({
+    id: String(Date.now()), name, savedAt: new Date().toISOString(),
+    ...readForm(), ai: { ...aiSummary },
+  });
   // เก็บ 20 แผนล่าสุดพอ — เกินกว่านี้รายการยาวจนหาไม่เจอและกิน localStorage ฟรีๆ
-  writeStore(STORE_PLANS, plans.slice(0, 20));
+  const saved = writeStore(STORE_PLANS, plans.slice(0, 20));
   renderPlanList();
-  flash(`บันทึกแผน "${name}" แล้ว`);
+  if (!saved) {
+    flash(`บันทึกแผน "${name}" ไม่สำเร็จ — พื้นที่เก็บข้อมูลของเบราว์เซอร์เต็ม `
+      + 'หรือถูกปิดไว้ · ลองลบแผนเก่าที่ไม่ใช้แล้วบันทึกอีกครั้ง');
+    return;
+  }
+  const withAI = [aiSummary.sim && 'จำลอง', aiSummary.income && 'พอร์ตปันผล'].filter(Boolean);
+  flash(`บันทึกแผน "${name}" แล้ว`
+    + (withAI.length ? ` · เก็บบทสรุปของ AI ไว้ด้วย (${withAI.join(' + ')})` : ''));
+}
+
+/**
+ * แสดงบทสรุปที่ AI เขียนไว้ตอนบันทึก
+ *
+ * ต้องบอกวันที่กำกับเสมอ เพราะตัวเลขที่ AI อ่านตอนนั้นคือราคาของวันนั้น
+ * ไม่ใช่วันนี้ · ถ้าไม่บอก ผู้ใช้จะอ่านบทสรุปเก่าแล้วเข้าใจว่าเป็นสถานะปัจจุบัน
+ */
+function restoreSummary(entry, outputId, noteId) {
+  const output = $(outputId);
+  const note = $(noteId);
+  if (!entry?.text) return false;
+  output.textContent = entry.text;
+  output.hidden = false;
+  note.textContent = `บทสรุปที่บันทึกไว้เมื่อ ${thaiDateTime(entry.at, { dateStyle: 'medium', timeStyle: 'short' })}`
+    + ' — เขียนจากราคาของวันนั้น กดคำนวณใหม่แล้วให้ AI สรุปอีกครั้งถ้าต้องการของวันนี้';
+  return true;
 }
 
 function loadPlan() {
@@ -152,7 +192,14 @@ function loadPlan() {
   if (!plan) return;
   applyForm(plan);
   hideResults();
-  flash(`เปิดแผน "${plan.name}" แล้ว — กดคำนวณเพื่อดูผลด้วยข้อมูลล่าสุด`);
+
+  // ต้องคืนค่าหลัง hideResults() เพราะ hideResults() ล้าง DOM และ aiSummary ทิ้ง
+  aiSummary = { sim: plan.ai?.sim || null, income: plan.ai?.income || null };
+  const shown = restoreSummary(aiSummary.sim, 'sim-ai-out', 'sim-ai-note')
+    | restoreSummary(aiSummary.income, 'income-ai-out', 'income-ai-note');
+
+  flash(`เปิดแผน "${plan.name}" แล้ว — กดคำนวณเพื่อดูผลด้วยข้อมูลล่าสุด`
+    + (shown ? ' · บทสรุปของ AI ที่บันทึกไว้แสดงอยู่ด้านล่างแล้ว' : ''));
 }
 
 function deletePlan() {
@@ -397,8 +444,11 @@ function hideResults() {
   $('income-result').hidden = true;
   $('sim-ai-out').hidden = true;
   $('income-ai-out').hidden = true;
+  $('sim-ai-note').textContent = '';
+  $('income-ai-note').textContent = '';
   lastSim = null;
   lastIncome = null;
+  aiSummary = { sim: null, income: null };
 }
 
 /** คืนค่าทุกช่องกลับเป็นค่าตั้งต้น แล้วล้างผลที่ค้างอยู่ */
@@ -646,7 +696,11 @@ function runSimulation() {
   };
 
   $('sim-result').hidden = false;
+  // ตัวเลขเปลี่ยนแล้ว บทสรุปเดิมจึงไม่ตรงกับผลที่เห็น — ต้องลืมทิ้งด้วย ไม่ใช่แค่ซ่อน
+  // ไม่งั้นกดบันทึกแล้วจะได้บทสรุปของตัวเลขชุดเก่าติดไปกับแผนชุดใหม่
   $('sim-ai-out').hidden = true;
+  $('sim-ai-note').textContent = '';
+  aiSummary.sim = null;
   $('notice').hidden = true;
   rememberForm();
 }
@@ -818,7 +872,10 @@ function runIncome() {
   };
 
   $('income-result').hidden = false;
+  // เหตุผลเดียวกับฝั่งจำลอง — ตัวเลขใหม่ทำให้บทสรุปเดิมใช้ไม่ได้ ต้องลืมทิ้ง
   $('income-ai-out').hidden = true;
+  $('income-ai-note').textContent = '';
+  aiSummary.income = null;
   $('notice').hidden = true;
   rememberForm();
 }
@@ -829,7 +886,7 @@ function runIncome() {
  * ส่งตัวเลขที่คำนวณเสร็จแล้วไปให้ AI เรียบเรียง
  * ปุ่มถูกล็อกระหว่างรอ เพราะแต่ละครั้งนับโควตาเดียวกับหน้าถาม AI
  */
-async function summarisePlan(plan, buttonId, outputId, noteId) {
+async function summarisePlan(plan, buttonId, outputId, noteId, kind) {
   const button = $(buttonId);
   const output = $(outputId);
   const note = $(noteId);
@@ -858,6 +915,9 @@ async function summarisePlan(plan, buttonId, outputId, noteId) {
 
     output.textContent = body.summary;
     output.hidden = false;
+    // จำไว้ให้ `savePlan()` หยิบไปเก็บ — ไม่งั้นบทสรุปที่จ่ายเงินไปแล้วหายทุกครั้ง
+    // ที่เปิดแผนอื่น และผู้ใช้ต้องจ่ายซ้ำเพื่อได้ข้อความเดิม
+    aiSummary[kind] = { text: body.summary, at: new Date().toISOString() };
     note.textContent = body.quota
       ? `ใช้โควตาไปแล้ว ${body.quota.used}/${body.quota.limit} ครั้งวันนี้`
       : '';
@@ -905,8 +965,8 @@ function bindEvents() {
   $('load-plan').addEventListener('click', loadPlan);
   $('delete-plan').addEventListener('click', deletePlan);
 
-  $('sim-ai').addEventListener('click', () => summarisePlan(lastSim, 'sim-ai', 'sim-ai-out', 'sim-ai-note'));
-  $('income-ai').addEventListener('click', () => summarisePlan(lastIncome, 'income-ai', 'income-ai-out', 'income-ai-note'));
+  $('sim-ai').addEventListener('click', () => summarisePlan(lastSim, 'sim-ai', 'sim-ai-out', 'sim-ai-note', 'sim'));
+  $('income-ai').addEventListener('click', () => summarisePlan(lastIncome, 'income-ai', 'income-ai-out', 'income-ai-note', 'income'));
 
   // จำค่าที่กรอกไว้ทุกช่อง เพื่อไม่ต้องกรอกใหม่ทั้งหมดเมื่อกลับเข้ามา
   for (const id of [...SIM_FIELDS, ...INCOME_FIELDS]) {
